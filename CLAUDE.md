@@ -25,7 +25,9 @@ why, in plain language.
 - Public GitHub repo, MIT licence, no AGPL dependencies (so no PyMuPDF). Never commit secrets.
 - Python 3.12 (Vercel's default Python runtime; checked in slice 0.1).
 
-See `docs/adr/` for the reasoning behind these.
+See `docs/adr/` for the reasoning behind these. The visual rules (colour meanings, type, radii, the
+"lens" interaction) are in `docs/design.md`; read it before changing any UI. Yellow means evidence
+only and red means errors only.
 
 ## Repo map
 ```
@@ -55,6 +57,7 @@ Run from the repo root unless noted.
 | Everything (hooks) | `uv run pre-commit run --all-files` |
 | Run API (port 8000) | `uv run uvicorn app.main:app --app-dir api --reload` |
 | Run web (port 3000) | `pnpm --dir apps/web dev` |
+| Web e2e: lens, theme, axe, screenshots | `pnpm --dir apps/web test:e2e` (builds first; screenshots go to `docs/screenshots/`) |
 
 Health check: `curl localhost:8000/api/v1/health` returns `{"status":"ok"}`.
 
