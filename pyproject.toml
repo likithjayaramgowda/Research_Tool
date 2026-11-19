@@ -1,0 +1,50 @@
+[project]
+name = "litlens"
+version = "0.1.0"
+description = "LitLens monorepo root (uv workspace). No code lives here."
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0",
+    "ruff>=0.15",
+    "pyright>=1.1.400",
+    "pre-commit>=4.0",
+]
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["api", "worker", "packages/core"]
+
+[tool.uv.sources]
+litlens-core = { workspace = true }
+
+[tool.pytest.ini_options]
+testpaths = ["packages/core/tests", "api/tests", "worker/tests"]
+pythonpath = ["packages/core/src", "api", "worker"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["apps"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "N", "ANN"]
+
+[tool.ruff.lint.isort]
+known-first-party = ["app", "litlens_core", "litlens_worker"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["ANN"]
+
+[tool.pyright]
+include = ["api", "worker", "packages"]
+exclude = ["**/.venv", "**/node_modules"]
+pythonVersion = "3.12"
+typeCheckingMode = "strict"
+extraPaths = ["api", "worker", "packages/core/src"]
+venvPath = "."
+venv = ".venv"
