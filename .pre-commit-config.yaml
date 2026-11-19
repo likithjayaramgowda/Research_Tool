@@ -1,0 +1,54 @@
+# Run automatically on `git commit`; run everything with: uv run pre-commit run --all-files
+# Python and web hooks are "local": they call the tool versions pinned in uv.lock / pnpm-lock.yaml,
+# so hooks, your terminal and CI always agree.
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+        exclude: ^apps/web/pnpm-lock\.yaml$
+      - id: check-toml
+      - id: check-json
+        exclude: ^apps/web/tsconfig\.json$
+      - id: check-added-large-files
+        args: ["--maxkb=500"]
+      - id: detect-private-key
+
+  - repo: local
+    hooks:
+      - id: ruff-check
+        name: ruff lint
+        entry: uv run ruff check --fix
+        language: system
+        types: [python]
+      - id: ruff-format
+        name: ruff format
+        entry: uv run ruff format
+        language: system
+        types: [python]
+      - id: pyright
+        name: pyright (types)
+        entry: uv run pyright
+        language: system
+        types: [python]
+        pass_filenames: false
+      - id: prettier
+        name: prettier (web)
+        entry: bash -c 'cd apps/web && pnpm exec prettier --write --ignore-unknown "${@#apps/web/}"' --
+        language: system
+        files: ^apps/web/
+        exclude: ^apps/web/pnpm-lock\.yaml$
+      - id: eslint
+        name: eslint (web)
+        entry: pnpm --dir apps/web lint
+        language: system
+        files: ^apps/web/.*\.(ts|tsx|js|jsx|mjs)$
+        pass_filenames: false
+      - id: tsc
+        name: typecheck (web)
+        entry: pnpm --dir apps/web typecheck
+        language: system
+        files: ^apps/web/.*\.(ts|tsx)$
+        pass_filenames: false
