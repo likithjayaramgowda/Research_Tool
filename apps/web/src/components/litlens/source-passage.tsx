@@ -2,6 +2,8 @@
 
 import { motion, useReducedMotion } from "motion/react";
 
+import { useCitationStyle } from "@/components/citation/citation-style-provider";
+import { shortName } from "@/lib/citation";
 import type { Paper, Passage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { LENS_DURATION, useLens } from "./lens";
@@ -26,6 +28,7 @@ const HIGHLIGHT_ON = "var(--highlighter)";
  */
 export function SourcePassage({ passage, paper, state, className }: SourcePassageProps) {
   const { activeId } = useLens();
+  const { style } = useCitationStyle();
   const reduced = useReducedMotion();
   const lensState: LensState =
     state ?? (activeId === null ? "idle" : activeId === passage.id ? "focused" : "dimmed");
@@ -57,7 +60,7 @@ export function SourcePassage({ passage, paper, state, className }: SourcePassag
         </motion.mark>
       </motion.blockquote>
       <figcaption className="text-graphite mt-2 font-sans text-xs">
-        {paper ? `${paper.short}, ` : ""}page {passage.page}
+        {paper ? `${shortName(paper, style)}, ` : ""}page {passage.page}
       </figcaption>
     </figure>
   );

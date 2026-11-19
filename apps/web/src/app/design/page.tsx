@@ -10,6 +10,7 @@ import { PaperCard } from "@/components/litlens/paper-card";
 import { PaperRow } from "@/components/litlens/paper-row";
 import { SourcePassage } from "@/components/litlens/source-passage";
 import { UploadDropzone } from "@/components/litlens/upload-dropzone";
+import { CitationStyleSelect } from "@/components/citation/citation-style-select";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 import { Button } from "@/components/ui/button";
 import {
@@ -42,6 +43,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { CITATION_STYLES, inTextLabel, referenceParts, styleInfo } from "@/lib/citation";
 import { papers, passages } from "@/lib/fixtures";
 
 const COLOURS = [
@@ -156,7 +158,10 @@ export default function DesignPage() {
             highlighter yellow that only ever means evidence. Use the toggle for dark mode.
           </p>
         </div>
-        <ThemeToggle />
+        <div className="flex items-center gap-2">
+          <CitationStyleSelect />
+          <ThemeToggle />
+        </div>
       </header>
 
       <Section
@@ -181,7 +186,7 @@ export default function DesignPage() {
             </li>
           ))}
         </ul>
-        <div className="overflow-x-auto">
+        <div role="region" aria-label="Contrast ratios" tabIndex={0} className="overflow-x-auto">
           <table className="w-full max-w-xl text-left text-sm">
             <caption className="text-graphite pb-3 text-left text-sm">
               Contrast ratios. Text needs 4.5 or more; dimmed text and UI need 3 or more.
@@ -439,6 +444,25 @@ export default function DesignPage() {
 
           <Specimen label="Answer and source sheet: the lens. Choose a chip, or Tab to it and press Enter. Esc clears.">
             <LensDemo />
+          </Specimen>
+
+          <Specimen label="Citation styles: the same paper, formatted six ways">
+            <div className="flex flex-col gap-6">
+              {CITATION_STYLES.map((s) => (
+                <div key={s.id} className="flex flex-col gap-1">
+                  <p className="text-sm font-semibold">{s.label}</p>
+                  <p className="text-graphite text-sm">
+                    In text: {inTextLabel(papers[0], 4, s.id, 1)}
+                  </p>
+                  <p className="reading text-sm">
+                    {referenceParts(papers[0], s.id, 1).map((part, i) =>
+                      part.italic ? <i key={i}>{part.text}</i> : <span key={i}>{part.text}</span>,
+                    )}
+                  </p>
+                  <p className="sr-only">{styleInfo(s.id).listTitle}</p>
+                </div>
+              ))}
+            </div>
           </Specimen>
 
           <Specimen label="PaperRow: Uploading, Reading, Ready, Failed">

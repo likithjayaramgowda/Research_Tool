@@ -15,7 +15,7 @@ test.describe("the lens", () => {
   });
 
   test("choosing a chip focuses its passage and dims the others", async ({ page }) => {
-    await answerChip(page, "Calloway 2023, p. 7").click();
+    await answerChip(page, "Calloway et al., 2023, p. 7").click();
     await expect(passage(page, "s2")).toHaveAttribute("data-lens-state", "focused");
     await expect(passage(page, "s1")).toHaveAttribute("data-lens-state", "dimmed");
     // The highlight is the yellow token (#FFE14D) once the short animation has finished.
@@ -27,7 +27,7 @@ test.describe("the lens", () => {
   });
 
   test("the source sheet scrolls so the passage is visible", async ({ page }) => {
-    await answerChip(page, "Calloway 2023, p. 11").click();
+    await answerChip(page, "Calloway et al., 2023, p. 11").click();
     const box = await passage(page, "s4").boundingBox();
     const sheet = await page.getByRole("region", { name: "Source passages" }).boundingBox();
     expect(box && sheet).toBeTruthy();
@@ -40,7 +40,7 @@ test.describe("the lens", () => {
   });
 
   test("Tab to a chip, Enter chooses it, Escape clears it", async ({ page }) => {
-    const chip = answerChip(page, "Hartigan 2022, p. 3");
+    const chip = answerChip(page, "Hartigan et al., 2022, p. 3");
     await chip.focus();
     await page.keyboard.press("Enter");
     await expect(passage(page, "s3")).toHaveAttribute("data-lens-state", "focused");
@@ -54,7 +54,7 @@ test.describe("the lens", () => {
     const context = await browser.newContext({ reducedMotion: "reduce" });
     const page = await context.newPage();
     await page.goto("/design");
-    await answerChip(page, "Calloway 2023, p. 7").click();
+    await answerChip(page, "Calloway et al., 2023, p. 7").click();
     // No waiting: the highlight is already fully yellow on the next frame.
     await expect(passage(page, "s2").locator("mark")).toHaveCSS(
       "background-color",

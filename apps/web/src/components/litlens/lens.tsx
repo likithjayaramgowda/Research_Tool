@@ -46,7 +46,7 @@ export function useLens(): LensValue {
 }
 
 /**
- * Scrolls `target` to the middle of its scrolling `container` using Motion, so the length is
+ * Scrolls `target` to the middle of its scrolling `container` (unless it is already fully in view) using Motion, so the length is
  * ours (under 200 ms) rather than the browser's. Instant when the visitor prefers reduced motion.
  */
 export function scrollToCenter(container: HTMLElement, target: HTMLElement, reduced: boolean) {
@@ -54,6 +54,11 @@ export function scrollToCenter(container: HTMLElement, target: HTMLElement, redu
   const targetBox = target.getBoundingClientRect();
   const offset = targetBox.top - containerBox.top - (containerBox.height - targetBox.height) / 2;
   const from = container.scrollTop;
+  // Already fully on screen (with a little margin)? Leave the sheet where it is.
+  const margin = 16;
+  const fullyVisible =
+    targetBox.top >= containerBox.top + margin && targetBox.bottom <= containerBox.bottom - margin;
+  if (fullyVisible) return;
   const to = Math.max(0, from + offset);
   if (reduced || Math.abs(to - from) < 1) {
     container.scrollTop = to;

@@ -3,7 +3,9 @@
 import { useReducedMotion } from "motion/react";
 import { useEffect, useId, useMemo, useRef } from "react";
 
+import { useCitationStyle } from "@/components/citation/citation-style-provider";
 import { Button } from "@/components/ui/button";
+import { shortName } from "@/lib/citation";
 import type { Paper, Passage } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { scrollToCenter, useLens } from "./lens";
@@ -13,17 +15,20 @@ interface SourceSheetProps {
   papers: Paper[];
   passages: Passage[];
   className?: string;
+  /** Extra classes for the header row, for example to leave room for a close button. */
+  headerClassName?: string;
 }
 
 /**
  * The reading surface for sources. Passages are grouped by paper. When the lens focuses a
  * passage, this sheet scrolls it to the middle (the highlight and dimming are in SourcePassage).
  */
-export function SourceSheet({ papers, passages, className }: SourceSheetProps) {
+export function SourceSheet({ papers, passages, className, headerClassName }: SourceSheetProps) {
   const { activeId, clear } = useLens();
   const reduced = useReducedMotion();
   const scroller = useRef<HTMLDivElement>(null);
   const headingId = useId();
+  const { style } = useCitationStyle();
 
   const groups = useMemo(
     () =>
@@ -46,7 +51,9 @@ export function SourceSheet({ papers, passages, className }: SourceSheetProps) {
 
   return (
     <section aria-labelledby={headingId} className={cn("sheet flex min-h-0 flex-col", className)}>
-      <div className="flex items-center justify-between gap-3 px-6 pt-5 pb-3">
+      <div
+        className={cn("flex items-center justify-between gap-3 px-6 pt-5 pb-3", headerClassName)}
+      >
         <h2 id={headingId} className="text-lg">
           Source
         </h2>
@@ -77,9 +84,7 @@ export function SourceSheet({ papers, passages, className }: SourceSheetProps) {
             <article key={paper.id} className="flex flex-col gap-5">
               <header>
                 <h3 className="font-heading text-base leading-snug">{paper.title}</h3>
-                <p className="text-graphite mt-1 text-xs">
-                  {paper.authors}, {paper.year}
-                </p>
+                <p className="text-graphite mt-1 text-xs">{shortName(paper, style)}</p>
               </header>
               {list.map((passage) => (
                 <SourcePassage key={passage.id} passage={passage} paper={paper} />

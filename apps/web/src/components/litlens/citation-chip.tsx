@@ -21,6 +21,7 @@ export function CitationChip({ passageId, label, className }: CitationChipProps)
   return (
     <button
       type="button"
+      data-citation-chip=""
       aria-pressed={active}
       aria-label={`Show source: ${label}`}
       onClick={() => focus(passageId)}

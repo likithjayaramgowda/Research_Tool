@@ -11,15 +11,28 @@ export interface PaperCardData {
   limitations: string;
 }
 
+/** One author, kept as structured data so every citation style can format it. */
+export interface Author {
+  family: string;
+  given: string;
+}
+
+/** The citation styles LitLens can format into. */
+export type CitationStyle = "apa" | "mla" | "chicago" | "harvard" | "ieee" | "vancouver";
+
 export interface Paper {
   id: string;
+  /** As printed on the paper, in title case. Styles that want sentence case convert it. */
   title: string;
-  /** For example "Calloway, Mbeki and Trenholm". */
-  authors: string;
-  /** Short label used in citation chips, for example "Calloway 2023". */
-  short: string;
+  authors: Author[];
   year: number;
-  pages: number;
+  journal: string;
+  volume: string;
+  issue: string;
+  /** Page range in the journal, with an en dash, for example "412–429". */
+  articlePages: string;
+  /** Number of pages in the uploaded PDF. */
+  pageCount: number;
   status: PaperStatus;
   /** 0 to 100, only meaningful while uploading or reading. */
   progress?: number;
@@ -45,4 +58,29 @@ export interface AnswerData {
   id: string;
   question: string;
   sentences: AnswerSentence[];
+}
+
+/** One row of the comparison table: a paper's headline facts. */
+export interface ComparisonRow {
+  paperId: string;
+  design: string;
+  sample: string;
+  duration: string;
+  finding: string;
+}
+
+export type GapStatus = "studied" | "partly" | "not-studied";
+
+/** One part of the student's idea, and whether each paper covers it. */
+export interface GapRow {
+  aspect: string;
+  /** Keyed by paper id. */
+  cells: Record<string, GapStatus>;
+}
+
+export interface GapCheckData {
+  /** The student's own research idea, in their words. */
+  idea: string;
+  paperIds: string[];
+  rows: GapRow[];
 }

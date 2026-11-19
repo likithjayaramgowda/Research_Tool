@@ -2,8 +2,10 @@
 
 import { CheckIcon, CircleAlertIcon } from "lucide-react";
 
+import { useCitationStyle } from "@/components/citation/citation-style-provider";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { shortName } from "@/lib/citation";
 import type { Paper, PaperStatus } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +26,7 @@ const STATUS_LABEL: Record<PaperStatus, string> = {
 
 /** A paper in the library: title, authors, and where it is in the upload-and-read pipeline. */
 export function PaperRow({ paper, selected = false, onSelect, onRetry, className }: PaperRowProps) {
+  const { style } = useCitationStyle();
   const busy = paper.status === "uploading" || paper.status === "reading";
   return (
     <li
@@ -40,9 +43,7 @@ export function PaperRow({ paper, selected = false, onSelect, onRetry, className
         className="flex min-w-0 flex-1 flex-col gap-1 rounded-md text-left"
       >
         <span className="font-heading text-sm leading-snug font-semibold">{paper.title}</span>
-        <span className="text-graphite text-xs">
-          {paper.authors}, {paper.year}
-        </span>
+        <span className="text-graphite text-xs">{shortName(paper, style)}</span>
         <span className="mt-1 flex items-center gap-2 text-xs">
           {paper.status === "ready" && <CheckIcon className="text-graphite size-4" aria-hidden />}
           {paper.status === "failed" && (

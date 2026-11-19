@@ -1,3 +1,7 @@
+"use client";
+
+import { useCitationStyle } from "@/components/citation/citation-style-provider";
+import { shortName } from "@/lib/citation";
 import type { Paper, PaperCardData } from "@/lib/types";
 import { cn } from "@/lib/utils";
 import { EmptyState } from "./empty-state";
@@ -17,12 +21,11 @@ const FIELDS: { key: keyof PaperCardData; label: string }[] = [
 
 /** One paper boiled down to five fields. Shows a placeholder until the paper is ready. */
 export function PaperCard({ paper, className }: PaperCardProps) {
+  const { style } = useCitationStyle();
   return (
     <article className={cn("sheet px-6 py-6 sm:px-8", className)}>
       <h3 className="font-heading text-lg leading-snug">{paper.title}</h3>
-      <p className="text-graphite mt-1 text-sm">
-        {paper.authors}, {paper.year}
-      </p>
+      <p className="text-graphite mt-1 text-sm">{shortName(paper, style)}</p>
       {paper.card ? (
         <dl className="mt-6 flex flex-col gap-6">
           {FIELDS.map(({ key, label }) => (

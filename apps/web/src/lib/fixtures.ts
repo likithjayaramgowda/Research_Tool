@@ -2,16 +2,23 @@
  * Sample data for slice 0.2. Every paper, author and finding below is invented.
  * Slice 2.6 replaces this file with real data from the API.
  */
-import type { AnswerData, Paper, Passage } from "./types";
+import type { AnswerData, ComparisonRow, GapCheckData, Paper, Passage } from "./types";
 
 export const papers: Paper[] = [
   {
     id: "p1",
     title: "Sleep Regularity and Attention Lapses in Rotating-Shift Workers",
-    authors: "Calloway, Mbeki and Trenholm",
-    short: "Calloway 2023",
+    authors: [
+      { family: "Calloway", given: "Aisha Marie" },
+      { family: "Mbeki", given: "Chidi" },
+      { family: "Trenholm", given: "Dara" },
+    ],
     year: 2023,
-    pages: 18,
+    journal: "Journal of Shift Work Research",
+    volume: "14",
+    issue: "2",
+    articlePages: "412–429",
+    pageCount: 18,
     status: "ready",
     card: {
       question: "Does an irregular sleep schedule affect attention, independent of sleep length?",
@@ -27,10 +34,17 @@ export const papers: Paper[] = [
   {
     id: "p2",
     title: "Timed Light Exposure and Circadian Drift: A Six-Week Field Trial",
-    authors: "Hartigan, Pellerin and Oyelaran",
-    short: "Hartigan 2022",
+    authors: [
+      { family: "Hartigan", given: "Declan" },
+      { family: "Pellerin", given: "Sylvie" },
+      { family: "Oyelaran", given: "Femi" },
+    ],
     year: 2022,
-    pages: 24,
+    journal: "Chronobiology in the Field",
+    volume: "9",
+    issue: "4",
+    articlePages: "201–224",
+    pageCount: 24,
     status: "ready",
     card: {
       question: "Can timed bright light keep the body clock aligned for people who rotate shifts?",
@@ -45,10 +59,16 @@ export const papers: Paper[] = [
   {
     id: "p3",
     title: "Short Naps as a Night-Shift Fatigue Countermeasure",
-    authors: "Ostrander and Veeran",
-    short: "Ostrander 2020",
+    authors: [
+      { family: "Ostrander", given: "Marta" },
+      { family: "Veeran", given: "Kiran" },
+    ],
     year: 2020,
-    pages: 12,
+    journal: "Occupational Rest Review",
+    volume: "7",
+    issue: "3",
+    articlePages: "88–99",
+    pageCount: 12,
     status: "reading",
     progress: 62,
   },
@@ -114,11 +134,40 @@ export const answer: AnswerData = {
   ],
 };
 
+/** Look-ups by id. */
 export const paperById = (id: string): Paper | undefined => papers.find((p) => p.id === id);
 export const passageById = (id: string): Passage | undefined => passages.find((p) => p.id === id);
 
-/** The text a citation chip shows, for example "Calloway 2023, p. 4". */
-export function chipLabel(passage: Passage): string {
-  const paper = paperById(passage.paperId);
-  return `${paper?.short ?? "Unknown"}, p. ${passage.page}`;
-}
+/** The first two sentences of the answer, used by the landing-page example. */
+export const heroAnswer: AnswerData = { ...answer, sentences: answer.sentences.slice(0, 2) };
+
+export const comparison: ComparisonRow[] = [
+  {
+    paperId: "p1",
+    design: "Observational",
+    sample: "212 hospital nurses",
+    duration: "4 weeks",
+    finding: "31% more attention errors when bedtimes varied by more than 90 minutes.",
+  },
+  {
+    paperId: "p2",
+    design: "Randomised trial",
+    sample: "96 warehouse and transport workers",
+    duration: "6 weeks",
+    finding: "Timed bright light cut body-clock drift by about a third.",
+  },
+];
+
+export const gapCheck: GapCheckData = {
+  idea: "Does a regular nap schedule reduce attention errors in night-shift nurses?",
+  paperIds: ["p1", "p2"],
+  rows: [
+    { aspect: "Night-shift nurses", cells: { p1: "partly", p2: "not-studied" } },
+    {
+      aspect: "A nap schedule as the intervention",
+      cells: { p1: "not-studied", p2: "not-studied" },
+    },
+    { aspect: "Attention measured directly", cells: { p1: "studied", p2: "not-studied" } },
+    { aspect: "Follow-up longer than six weeks", cells: { p1: "not-studied", p2: "not-studied" } },
+  ],
+};

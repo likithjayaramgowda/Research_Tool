@@ -4,6 +4,7 @@ const PORT = 3100;
 
 export default defineConfig({
   testDir: "./e2e",
+  testIgnore: /.*\.unit\.spec\.ts/,
   fullyParallel: true,
   workers: 4,
   reporter: [["list"]],

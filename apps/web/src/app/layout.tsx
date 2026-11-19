@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Atkinson_Hyperlegible_Next, Literata } from "next/font/google";
 
+import { CitationStyleProvider } from "@/components/citation/citation-style-provider";
 import { THEME_INIT_SCRIPT, ThemeProvider } from "@/components/theme/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,7 +38,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       </head>
       <body className="flex min-h-full flex-col">
         <ThemeProvider>
-          <TooltipProvider delay={300}>{children}</TooltipProvider>
+          <CitationStyleProvider>
+            <TooltipProvider delay={300}>{children}</TooltipProvider>
+          </CitationStyleProvider>
           <Toaster />
         </ThemeProvider>
       </body>
