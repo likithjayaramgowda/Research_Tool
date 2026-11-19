@@ -2,129 +2,215 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Dark mode is a class on <html>, set by the theme script in layout.tsx. */
 @custom-variant dark (&:is(.dark *));
 
+/*
+ * LitLens design tokens. Full rules live in docs/design.md.
+ *
+ * Meanings (never break these):
+ *   desk        app background          sheet       reading surfaces
+ *   ink         text, primary buttons, focus rings
+ *   graphite    secondary text, borders, icons
+ *   highlighter citations and highlighted passages ONLY
+ *   alert       errors ONLY
+ */
+:root {
+  --desk: #e9edf0;
+  --sheet: #ffffff;
+  --ink: #18233a;
+  --graphite: #5b6675;
+  --highlighter: #ffe14d;
+  --on-highlighter: #18233a; /* text on yellow is always ink, in both modes */
+  --alert: #b42318;
+  --rule: color-mix(in srgb, var(--graphite) 35%, transparent); /* dividers, decorative only */
+  --dim-opacity: 0.65; /* the lens: ink text at 65% keeps >= 4.5:1 on the sheet (brief floor: 3:1) */
+
+  /* shadcn semantic names, mapped onto the palette */
+  --background: var(--desk);
+  --foreground: var(--ink);
+  --card: var(--sheet);
+  --card-foreground: var(--ink);
+  --popover: var(--sheet);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: #ffffff;
+  --secondary: var(--sheet);
+  --secondary-foreground: var(--ink);
+  --muted: color-mix(in srgb, var(--ink) 6%, var(--desk));
+  --muted-foreground: var(--graphite);
+  --accent: color-mix(in srgb, var(--ink) 8%, var(--sheet));
+  --accent-foreground: var(--ink);
+  --destructive: var(--alert);
+  --border: var(--rule);
+  --input: var(--graphite); /* form field outlines need 3:1, so full graphite */
+  --ring: var(--ink);
+  --chart-1: var(--ink);
+  --chart-2: var(--graphite);
+  --chart-3: var(--graphite);
+  --chart-4: var(--graphite);
+  --chart-5: var(--graphite);
+  --sidebar: var(--desk);
+  --sidebar-foreground: var(--ink);
+  --sidebar-primary: var(--ink);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: var(--accent);
+  --sidebar-accent-foreground: var(--ink);
+  --sidebar-border: var(--rule);
+  --sidebar-ring: var(--ink);
+}
+
+/* Dark: a deep ink-navy desk (never pure black). Same meanings, same yellow. */
+.dark {
+  --desk: #0e1524;
+  --sheet: #17223a;
+  --ink: #e9edf0;
+  --graphite: #a3aebd;
+  --highlighter: #ffe14d;
+  --on-highlighter: #18233a;
+  --alert: #ff8a80;
+  --rule: color-mix(in srgb, var(--graphite) 35%, transparent);
+  --dim-opacity: 0.65;
+
+  --primary-foreground: #18233a;
+  --muted: color-mix(in srgb, var(--ink) 7%, var(--desk));
+  --accent: color-mix(in srgb, var(--ink) 10%, var(--sheet));
+  --sidebar-primary-foreground: #18233a;
+}
+
 @theme inline {
+  --color-desk: var(--desk);
+  --color-sheet: var(--sheet);
+  --color-ink: var(--ink);
+  --color-graphite: var(--graphite);
+  --color-highlighter: var(--highlighter);
+  --color-on-highlighter: var(--on-highlighter);
+  --color-alert: var(--alert);
+  --color-rule: var(--rule);
+
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
-  --radius-sm: calc(var(--radius) * 0.6);
-  --radius-md: calc(var(--radius) * 0.8);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) * 1.4);
-  --radius-2xl: calc(var(--radius) * 1.8);
-  --radius-3xl: calc(var(--radius) * 2.2);
-  --radius-4xl: calc(var(--radius) * 2.6);
-}
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
 
-:root {
-  --background: oklch(1 0 0);
-  --foreground: oklch(0.145 0 0);
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-  --destructive: oklch(0.577 0.245 27.325);
-  --border: oklch(0.922 0 0);
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.625rem;
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
-}
+  /* Fonts: Literata for reading content, Atkinson Hyperlegible Next for the interface. */
+  --font-sans: var(--font-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-reading), Georgia, "Times New Roman", serif;
+  --font-heading: var(--font-reading), Georgia, "Times New Roman", serif;
 
-.dark {
-  --background: oklch(0.145 0 0);
-  --foreground: oklch(0.985 0 0);
-  --card: oklch(0.205 0 0);
-  --card-foreground: oklch(0.985 0 0);
-  --popover: oklch(0.205 0 0);
-  --popover-foreground: oklch(0.985 0 0);
-  --primary: oklch(0.922 0 0);
-  --primary-foreground: oklch(0.205 0 0);
-  --secondary: oklch(0.269 0 0);
-  --secondary-foreground: oklch(0.985 0 0);
-  --muted: oklch(0.269 0 0);
-  --muted-foreground: oklch(0.708 0 0);
-  --accent: oklch(0.269 0 0);
-  --accent-foreground: oklch(0.985 0 0);
-  --destructive: oklch(0.704 0.191 22.216);
-  --border: oklch(1 0 0 / 10%);
-  --input: oklch(1 0 0 / 15%);
-  --ring: oklch(0.556 0 0);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.205 0 0);
-  --sidebar-foreground: oklch(0.985 0 0);
-  --sidebar-primary: oklch(0.488 0.243 264.376);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.269 0 0);
-  --sidebar-accent-foreground: oklch(0.985 0 0);
-  --sidebar-border: oklch(1 0 0 / 10%);
-  --sidebar-ring: oklch(0.556 0 0);
+  /* Type scale, about 1.25: 13, 15, 17, 21, 26, 33, 41, 52 px. Weights: 400 and 600 only. */
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.4;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.5;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.6;
+  --text-lg: 1.3125rem;
+  --text-lg--line-height: 1.4;
+  --text-xl: 1.625rem;
+  --text-xl--line-height: 1.3;
+  --text-2xl: 2.0625rem;
+  --text-2xl--line-height: 1.2;
+  --text-3xl: 2.5625rem;
+  --text-3xl--line-height: 1.15;
+  --text-4xl: 3.25rem;
+  --text-4xl--line-height: 1.1;
+
+  /* Radius: 4px for controls, 6px for sheets and popups. Pills are only for citation chips. */
+  --radius-xs: 3px;
+  --radius-sm: 3px;
+  --radius-md: 4px;
+  --radius-lg: 6px;
+  --radius-xl: 6px;
+  --radius-2xl: 6px;
+  --radius-3xl: 6px;
+  --radius-4xl: 6px;
+  --radius-sheet: 6px;
+  --radius-control: 4px;
+  --radius-chip: 9999px;
 }
 
 @layer base {
   * {
-    @apply border-border outline-ring/50;
-  }
-  body {
-    @apply bg-background text-foreground;
+    @apply border-border;
   }
   html {
     @apply font-sans;
+    color-scheme: light;
+  }
+  html.dark {
+    color-scheme: dark;
+  }
+  body {
+    @apply bg-background text-foreground text-sm;
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+  }
+  /* Every interactive thing gets a visible focus state, ink on light and pale ink on dark. */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading;
+    font-weight: 600;
+    text-wrap: balance;
+  }
+  ::selection {
+    background: color-mix(in srgb, var(--ink) 18%, transparent);
+  }
+}
+
+@layer components {
+  /* A reading surface: answers, passages, paper cards. */
+  .sheet {
+    @apply bg-sheet rounded-lg;
+  }
+  /* Reading text: Literata 17px, line-height 1.6, never wider than 70 characters. */
+  .reading {
+    @apply font-serif text-base;
+    max-width: 70ch;
+  }
+}
+
+/* Motion only responds to an action, and switches off entirely when the visitor asks. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }

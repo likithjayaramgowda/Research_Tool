@@ -13,7 +13,7 @@ repos:
       - id: check-json
         exclude: ^apps/web/tsconfig\.json$
       - id: check-added-large-files
-        args: ["--maxkb=500"]
+        args: ["--maxkb=1000"] # full-page design screenshots in docs/screenshots are ~650 KB
       - id: detect-private-key
 
   - repo: local
