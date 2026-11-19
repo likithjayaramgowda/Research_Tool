@@ -57,6 +57,7 @@ Run from the repo root unless noted.
 | Everything (hooks) | `uv run pre-commit run --all-files` |
 | Run API (port 8000) | `uv run uvicorn app.main:app --app-dir api --reload` |
 | Run web (port 3000) | `pnpm --dir apps/web dev` |
+| Web unit tests (citation formats) | `pnpm --dir apps/web test:unit` |
 | Web e2e: lens, theme, axe, screenshots | `pnpm --dir apps/web test:e2e` (builds first; screenshots go to `docs/screenshots/`) |
 
 Health check: `curl localhost:8000/api/v1/health` returns `{"status":"ok"}`.

@@ -113,12 +113,54 @@ LitLens components in `apps/web/src/components/litlens/`:
 | `PaperCard` | Title plus Question, Method, Data, Findings, Limitations. |
 | `UploadDropzone` | Drag or choose PDFs. UI only. |
 | `EmptyState` | Title, description and an optional action; neutral or error. |
+| `ComparisonTable` | Papers side by side: design, sample, duration, main finding. |
+| `GapGrid` | Gap Check: parts of the student's idea against each paper. Status is icon plus words. |
+| `HeroLens` | The landing page's working example of the lens. Plays once, then waits. |
+| `AppShell` | The three-pane reading desk, with `LibraryPane` and `ConversationPane`. |
 
 Sample data is in `apps/web/src/lib/fixtures.ts`. Every paper in it is invented.
 
+## Citation styles
+
+The student picks a style (APA 7, MLA 9, Chicago author-date, Harvard, IEEE or Vancouver) from
+the "Citations" menu and everything re-formats at once: the text on every chip, the way papers are
+named in the library, source sheet and paper cards, and the reference list under each answer
+(titled "References", "Works cited" or "Reference list" as the style requires, with a copy button).
+The choice is remembered in the browser.
+
+How it works: papers are stored as **structured data** (authors with family and given names, year,
+journal, volume, issue, pages). Nothing is stored as ready-made citation text. `lib/citation.ts`
+holds pure functions that format that data per style, so a new style is one more case in a few
+functions and nothing else changes. The numbered styles (IEEE, Vancouver) number papers in the
+order the answer first cites them.
+
+Limits to know about: journal articles only; no DOIs, editors or books; sentence case for titles
+cannot spot proper nouns; no handling of 7 or more authors. Always check against your own style
+guide. Each style's rules are covered by tests in `e2e/citation.unit.spec.ts`.
+
+Code: `lib/citation.ts`, `components/citation/` (provider and menu).
+
+## Pages
+
+- **`/` landing.** Hero with the headline and a working example of the lens (plays once about
+  0.9 s after load, then waits; if the visitor chooses a chip first, it never plays). "Try the
+  demo" goes to `/demo`, "Sign in with Google" to the `/sign-in` placeholder. Then "How it works"
+  (upload, ask, check), then previews built from the real components (paper card, comparison
+  table, Gap Check), then the footer.
+- **`/demo` and `/app`.** The reading desk. Library (paper rows and the dropzone) on the left,
+  Conversation (Answers, Paper cards, Gaps) in the middle, Source sheet on the right. Below 1024px
+  the library is a drawer and the source is a bottom sheet that opens by itself when a chip is
+  chosen. Both routes show the same sample data, labelled "Sample data", until slice 2.6.
+- **`/sign-in`.** Placeholder.
+- **`/design`.** Every token and component.
+
 ## Checking it
 
-`pnpm --dir apps/web test:e2e` builds the site and, for each page, in light and dark at 1280px and
-390px: takes a screenshot (saved to `docs/screenshots/`), fails on any serious or critical axe
+`pnpm --dir apps/web test:unit` runs the citation-format tests (no browser, under a second).
+
+`pnpm --dir apps/web test:e2e` builds the site and, for each page (`/`, `/demo`, `/app`, `/sign-in`,
+`/design`), in light and dark at 1280px and 390px: takes a screenshot (saved to `docs/screenshots/`), fails on any serious or critical axe
 issue (WCAG 2.2 AA), and fails if the page scrolls sideways. It also tests the lens by mouse and
-keyboard, reduced motion, and the theme toggle.
+keyboard, the landing example's autoplay, the shell on wide and phone screens, switching citation
+styles, reduced motion, the theme toggle, and runs axe on open overlays (drawer, bottom sheet,
+menus). Screenshots of those interactive states are saved too.
