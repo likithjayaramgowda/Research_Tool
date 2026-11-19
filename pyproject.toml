@@ -3,6 +3,8 @@ name = "litlens"
 version = "0.1.0"
 description = "LitLens monorepo root (uv workspace). No code lives here."
 requires-python = ">=3.12,<3.13"
+license = "MIT"
+authors = [{ name = "Likith Jayaram Gowda" }]
 dependencies = []
 
 [dependency-groups]

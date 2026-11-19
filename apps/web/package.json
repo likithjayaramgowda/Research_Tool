@@ -2,6 +2,8 @@
   "name": "web",
   "version": "0.1.0",
   "private": true,
+  "author": "Likith Jayaram Gowda",
+  "license": "MIT",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

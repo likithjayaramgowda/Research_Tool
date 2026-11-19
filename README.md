@@ -38,5 +38,8 @@ things are built this way.
 ## Configuration
 Copy `.env.example` to `.env` and fill in values. Never commit `.env`.
 
+## Author
+Likith Jayaram Gowda
+
 ## Licence
-[MIT](LICENSE)
+[MIT](LICENSE), copyright (c) 2026 Likith Jayaram Gowda.

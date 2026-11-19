@@ -3,6 +3,8 @@ name = "litlens-core"
 version = "0.1.0"
 description = "Shared pure-Python logic for the LitLens API and worker. Keep dependencies light."
 requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "Likith Jayaram Gowda" }]
 dependencies = []
 
 [build-system]

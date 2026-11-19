@@ -3,6 +3,8 @@ name = "litlens-api"
 version = "0.1.0"
 description = "LitLens FastAPI service (runs on Vercel's Python runtime)."
 requires-python = ">=3.12"
+license = "MIT"
+authors = [{ name = "Likith Jayaram Gowda" }]
 dependencies = [
     "fastapi>=0.115",
     "litlens-core",

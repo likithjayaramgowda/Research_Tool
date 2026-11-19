@@ -9,8 +9,9 @@ citation on every sentence. It also builds "paper cards", finds research gaps (i
 Check" of the student's own idea), and checks each paper's relevance to their topic. Recruiters can
 try a demo without signing in. It is a portfolio prototype, not a product.
 
-The owner is a data engineer (strong Python and SQL, newer to web apps) who is learning from the
-code. Explain what you do and why, in plain language.
+The project owner, author and copyright holder is **Likith Jayaram Gowda**, a data engineer
+(strong Python and SQL, newer to web apps) who is learning from the code. Explain what you do and
+why, in plain language.
 
 ## Fixed decisions (ask the owner before changing any of these)
 - Free tiers only, and no payment card on any service.
