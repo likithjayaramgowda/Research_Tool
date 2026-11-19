@@ -1,5 +1,11 @@
 /** The pages every visual and accessibility check walks through. */
-export const PAGES = [{ name: "design", path: "/design" }];
+export const PAGES = [
+  { name: "home", path: "/" },
+  { name: "demo", path: "/demo" },
+  { name: "app", path: "/app" },
+  { name: "sign-in", path: "/sign-in" },
+  { name: "design", path: "/design" },
+];
 
 export const THEMES = ["light", "dark"] as const;
 
