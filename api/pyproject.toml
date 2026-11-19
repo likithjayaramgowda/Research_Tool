@@ -9,7 +9,7 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["httpx2>=2.0"]
+dev = ["httpx2>=2.0", "uvicorn>=0.30"]
 
 [tool.vercel]
 entrypoint = "app.main:app"
