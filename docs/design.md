@@ -92,8 +92,9 @@ Never:
 - Monospace for small labels.
 - Text joined with dots.
 - Yellow for anything but citations and highlighted passages. Red for anything but errors.
-- Motion that is not a response to an action. The one exception is the landing hero, which plays
-  once.
+- Motion that is not a response to an action. The exceptions: the demo loop on home, sign-in and
+  the empty library (see "Demo loop"), and the hero lens example, which plays once.
+- Motion on a reading surface (library, answer column, source panel) unless the reader caused it.
 
 ## Components
 
@@ -115,10 +116,23 @@ LitLens components in `apps/web/src/components/litlens/`:
 | `EmptyState` | Title, description and an optional action; neutral or error. |
 | `ComparisonTable` | Papers side by side: design, sample, duration, main finding. |
 | `GapGrid` | Gap Check: parts of the student's idea against each paper. Status is icon plus words. |
+| `DemoLoop` | Live background of the real interaction replaying (home, sign-in, empty library). See "Demo loop". |
 | `HeroLens` | The landing page's working example of the lens. Plays once, then waits. |
 | `AppShell` | The three-pane reading desk, with `LibraryPane` and `ConversationPane`. |
 
 Sample data is in `apps/web/src/lib/fixtures.ts`. Every paper in it is invented.
+
+## Demo loop
+
+`DemoLoop` (`components/litlens/demo-loop.tsx`, [ADR 0005](adr/0005-motion-scope.md)) replays the
+real interaction as a background: sheet settles, question types, answer appears a sentence at a
+time, a chip appears and activates, the source passage lights up yellow, hold, fade, restart
+(about 13.7 s). Variants: `full` (home), `quiet` (sign-in: 0.6x speed, fainter, plays once),
+`compact` (empty library). Built from the real components on hardcoded data; one Motion timeline;
+transform and opacity only; static end state for first paint and reduced motion; pauses off-screen
+and in hidden tabs; decorative (aria-hidden, inert). The yellow is dimmed in dark mode by the
+loop's own opacity so it reads as a highlight, not a glare. Keep text clear of it: yellow behind
+text cannot meet AA contrast.
 
 ## Citation styles
 
@@ -142,8 +156,8 @@ Code: `lib/citation.ts`, `components/citation/` (provider and menu).
 
 ## Pages
 
-- **`/` landing.** Hero with the headline and a working example of the lens (plays once about
-  0.9 s after load, then waits; if the visitor chooses a chip first, it never plays). "Try the
+- **`/` landing.** Hero with the headline and the live demo loop. Below it, a working example of
+  the lens (plays once about 0.9 s after load, then waits; if the visitor chooses a chip first, it never plays). "Try the
   demo" goes to `/demo`, "Sign in with Google" to the `/sign-in` placeholder. Then "How it works"
   (upload, ask, check), then previews built from the real components (paper card, comparison
   table, Gap Check), then the footer.

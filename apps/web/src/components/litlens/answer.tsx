@@ -65,9 +65,6 @@ export function Answer({
       )}
       <p className="reading">
         {answer.sentences.map((sentence) => {
-          // The last word travels with the first chip (a non-breaking group), so a chip can never
-          // start a line and read as if it introduced the next sentence.
-          const cut = sentence.text.lastIndexOf(" ") + 1;
           const chips = sentence.citations.flatMap((id) => {
             const passage = passageById(id);
             const paper = passage && paperById(passage.paperId);
@@ -90,16 +87,7 @@ export function Answer({
             ];
           });
           return (
-            <span key={sentence.id} data-sentence-id={sentence.id} className="sentence">
-              {sentence.text.slice(0, cut)}
-              <span className="whitespace-nowrap">
-                {sentence.text.slice(cut)}
-                {chips.length > 0 && <> {chips[0]}</>}
-              </span>
-              {chips.slice(1).map((chip) => (
-                <span key={chip.key}> {chip}</span>
-              ))}{" "}
-            </span>
+            <AnswerSentence key={sentence.id} id={sentence.id} text={sentence.text} chips={chips} />
           );
         })}
       </p>
@@ -128,5 +116,33 @@ export function Answer({
         </section>
       )}
     </article>
+  );
+}
+
+interface AnswerSentenceProps {
+  id: string;
+  text: string;
+  /** The sentence's citation chips, in order. */
+  chips: React.ReactElement[];
+}
+
+/**
+ * One answer sentence and its chips. The last word travels with the first chip as a
+ * non-breaking group, so a chip can never start a line and read as if it introduced the next
+ * sentence. Shared by `Answer` and the demo loop, so the two cannot drift apart.
+ */
+export function AnswerSentence({ id, text, chips }: AnswerSentenceProps) {
+  const cut = text.lastIndexOf(" ") + 1;
+  return (
+    <span data-sentence-id={id} className="sentence">
+      {text.slice(0, cut)}
+      <span className="whitespace-nowrap">
+        {text.slice(cut)}
+        {chips.length > 0 && <> {chips[0]}</>}
+      </span>
+      {chips.slice(1).map((chip) => (
+        <span key={chip.key}> {chip}</span>
+      ))}{" "}
+    </span>
   );
 }

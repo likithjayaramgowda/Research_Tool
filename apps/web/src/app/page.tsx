@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { ComparisonTable } from "@/components/litlens/comparison-table";
+import { DemoLoop } from "@/components/litlens/demo-loop";
 import { GapGrid } from "@/components/litlens/gap-grid";
 import { HeroLens } from "@/components/litlens/hero-lens";
 import { PaperCard } from "@/components/litlens/paper-card";
@@ -50,28 +51,46 @@ export default function Home() {
     <>
       <SiteHeader />
       <main className="flex-1">
-        <section
-          aria-labelledby="hero-heading"
-          className="mx-auto grid w-full max-w-6xl items-start gap-12 px-4 py-10 sm:px-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-16 lg:py-20"
-        >
-          <div className="flex flex-col items-start gap-6">
-            <h1 id="hero-heading" className="text-3xl sm:text-4xl lg:text-4xl">
-              Ask your papers. See exactly where each answer comes from.
-            </h1>
-            <p className="text-graphite max-w-xl text-base">
-              Upload up to 30 papers. LitLens answers only from them, cites the page for every
-              sentence, and tells you when the answer isn&apos;t there.
-            </p>
-            <div className="flex flex-wrap gap-3 pt-2">
-              <Link href="/demo" className={buttonVariants({ size: "lg" })}>
-                Try the demo
-              </Link>
-              <Link href="/sign-in" className={buttonVariants({ size: "lg", variant: "outline" })}>
-                Sign in with Google
-              </Link>
+        <section aria-labelledby="hero-heading" className="relative">
+          <div className="relative mx-auto w-full max-w-6xl px-4 py-10 sm:px-8 lg:flex lg:min-h-[34rem] lg:items-center lg:py-20">
+            <div className="flex flex-col items-start gap-6 lg:max-w-[30rem]">
+              <h1 id="hero-heading" className="text-3xl sm:text-4xl lg:text-4xl">
+                Ask your papers. See exactly where each answer comes from.
+              </h1>
+              <p className="text-graphite max-w-xl text-base">
+                Upload up to 30 papers. LitLens answers only from them, cites the page for every
+                sentence, and tells you when the answer isn&apos;t there.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Link href="/demo" className={buttonVariants({ size: "lg" })}>
+                  Try the demo
+                </Link>
+                <Link
+                  href="/sign-in"
+                  className={buttonVariants({ size: "lg", variant: "outline" })}
+                >
+                  Sign in with Google
+                </Link>
+              </div>
             </div>
+            {/* The live demo loop sits behind the hero on wide screens and under it on phones. */}
+            <DemoLoop
+              variant="full"
+              className="mt-10 lg:absolute lg:top-1/2 lg:right-8 lg:mt-0 lg:-translate-y-1/2"
+            />
           </div>
-          <HeroLens />
+        </section>
+
+        <section
+          aria-labelledby="try-heading"
+          className="mx-auto w-full max-w-6xl px-4 py-10 sm:px-8"
+        >
+          <h2 id="try-heading" className="text-2xl">
+            TODO(copy): Try the lens on a sample answer
+          </h2>
+          <div className="mt-8 max-w-2xl">
+            <HeroLens />
+          </div>
         </section>
 
         <section

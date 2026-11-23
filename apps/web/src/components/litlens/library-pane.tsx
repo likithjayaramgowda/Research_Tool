@@ -2,11 +2,16 @@
 
 import { useId } from "react";
 
-import { papers } from "@/lib/fixtures";
+import { papers as samplePapers } from "@/lib/fixtures";
+import type { Paper } from "@/lib/types";
+import { DemoLoop } from "./demo-loop";
+import { EmptyState } from "./empty-state";
 import { PaperRow } from "./paper-row";
 import { UploadDropzone } from "./upload-dropzone";
 
 interface LibraryPaneProps {
+  /** The papers in the workspace. Defaults to the sample data; empty shows the empty state. */
+  papers?: Paper[];
   selectedId: string | null;
   onSelect: (paperId: string) => void;
   /**
@@ -17,7 +22,12 @@ interface LibraryPaneProps {
 }
 
 /** The left pane: the papers in the workspace, and a place to add more. */
-export function LibraryPane({ selectedId, onSelect, renderHeading }: LibraryPaneProps) {
+export function LibraryPane({
+  papers = samplePapers,
+  selectedId,
+  onSelect,
+  renderHeading,
+}: LibraryPaneProps) {
   const headingId = useId();
   return (
     <div className="flex flex-col gap-6">
@@ -29,16 +39,26 @@ export function LibraryPane({ selectedId, onSelect, renderHeading }: LibraryPane
             Library
           </h2>
         )}
-        <ul className="sheet px-4 py-1">
-          {papers.map((paper) => (
-            <PaperRow
-              key={paper.id}
-              paper={paper}
-              selected={paper.id === selectedId}
-              onSelect={onSelect}
+        {papers.length === 0 ? (
+          <div className="sheet flex flex-col gap-4 p-4">
+            <DemoLoop variant="compact" />
+            <EmptyState
+              title="TODO(copy): No papers yet."
+              description="TODO(copy): Add a paper below, then ask it a question."
             />
-          ))}
-        </ul>
+          </div>
+        ) : (
+          <ul className="sheet px-4 py-1">
+            {papers.map((paper) => (
+              <PaperRow
+                key={paper.id}
+                paper={paper}
+                selected={paper.id === selectedId}
+                onSelect={onSelect}
+              />
+            ))}
+          </ul>
+        )}
       </section>
       <UploadDropzone />
     </div>

@@ -4,7 +4,9 @@ import { toast } from "sonner";
 
 import { LensDemo } from "@/components/litlens/lens-demo";
 import { CitationChip } from "@/components/litlens/citation-chip";
+import { DemoLoop } from "@/components/litlens/demo-loop";
 import { EmptyState } from "@/components/litlens/empty-state";
+import { LibraryPane } from "@/components/litlens/library-pane";
 import { LensProvider } from "@/components/litlens/lens";
 import { PaperCard } from "@/components/litlens/paper-card";
 import { PaperRow } from "@/components/litlens/paper-row";
@@ -510,6 +512,20 @@ export default function DesignPage() {
                 description="TODO(copy): Try again in a moment."
                 action={<Button variant="outline">Try again</Button>}
               />
+            </div>
+          </Specimen>
+
+          <Specimen label="Library, empty (with the compact demo loop)">
+            <div className="max-w-xs">
+              <LibraryPane papers={[]} selectedId={null} onSelect={() => {}} />
+            </div>
+          </Specimen>
+
+          <Specimen label="DemoLoop: full (home), quiet (sign-in) and compact (empty library)">
+            <div className="flex flex-col gap-6">
+              <DemoLoop variant="full" />
+              <DemoLoop variant="quiet" />
+              <DemoLoop variant="compact" />
             </div>
           </Specimen>
         </div>

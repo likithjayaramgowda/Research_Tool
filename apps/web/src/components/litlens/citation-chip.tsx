@@ -12,6 +12,8 @@ interface CitationChipProps {
   accessibleName: string;
   /** The answer sentence this chip supports. Slice 2.3's real citation mapping hangs off this. */
   sentenceId?: string;
+  /** Forces the chosen look. Normally it comes from the lens; the demo loop uses this. */
+  pressed?: boolean;
   className?: string;
 }
 
@@ -24,10 +26,11 @@ export function CitationChip({
   label,
   accessibleName,
   sentenceId,
+  pressed,
   className,
 }: CitationChipProps) {
   const { activeId, focus } = useLens();
-  const active = activeId === passageId;
+  const active = pressed ?? activeId === passageId;
   return (
     <button
       type="button"
