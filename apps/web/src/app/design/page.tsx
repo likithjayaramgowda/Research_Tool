@@ -6,6 +6,7 @@ import { LensDemo } from "@/components/litlens/lens-demo";
 import { CitationChip } from "@/components/litlens/citation-chip";
 import { DemoLoop } from "@/components/litlens/demo-loop";
 import { EmptyState } from "@/components/litlens/empty-state";
+import { ReferenceList } from "@/components/litlens/reference-list";
 import { LibraryPane } from "@/components/litlens/library-pane";
 import { LensProvider } from "@/components/litlens/lens";
 import { PaperCard } from "@/components/litlens/paper-card";
@@ -513,6 +514,26 @@ export default function DesignPage() {
                 action={<Button variant="outline">Try again</Button>}
               />
             </div>
+          </Specimen>
+
+          <Specimen label="References with missing metadata (gaps are marked, nothing is invented)">
+            <article className="sheet px-6 pb-6">
+              <ReferenceList
+                style="apa"
+                references={[
+                  {
+                    number: 1,
+                    paper: {
+                      ...papers[0],
+                      volume: undefined,
+                      issue: undefined,
+                      articlePages: undefined,
+                    },
+                  },
+                  { number: 2, paper: { ...papers[1], year: undefined } },
+                ]}
+              />
+            </article>
           </Specimen>
 
           <Specimen label="Library, empty (with the compact demo loop)">

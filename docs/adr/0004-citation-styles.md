@@ -30,3 +30,7 @@ how to write it, so they re-format the moment the style changes.
 - Numbered styles need the order papers are first cited in an answer, so that numbering is computed
   per answer.
 - In a later slice the style could be saved per account (it is per browser for now).
+
+## Update
+See [ADR 0006](0006-citation-styles-in-the-shell.md): references now degrade gracefully when
+metadata is missing, and this decision is conditional on what slice 1.2 shows the parser extracts.

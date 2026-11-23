@@ -109,6 +109,7 @@ LitLens components in `apps/web/src/components/litlens/`:
 | `CitationChip` | The pill that names a source, such as "Calloway 2023, p. 4". A real button. |
 | `SourcePassage` | A quoted passage; idle, focused (yellow) or dimmed. |
 | `SourceSheet` | The scrolling sheet of passages grouped by paper. |
+| `ReferenceList` | The reference list under an answer, with gap markers and a Copy button. |
 | `Answer` | Sentences as one paragraph, each in a `data-sentence-id` span, followed by its chips. The last word is bound to the first chip (no wrapping between them) so a chip never starts a line; hovering or focusing a chip tints its sentence (ink wash, never yellow). Chips carry `data-cites` and the accessible name "Source: " plus their visible text. |
 | `PaperRow` | A library row with status Uploading, Reading, Ready or Failed. |
 | `PaperCard` | Title plus Question, Method, Data, Findings, Limitations. |
@@ -147,6 +148,12 @@ journal, volume, issue, pages). Nothing is stored as ready-made citation text. `
 holds pure functions that format that data per style, so a new style is one more case in a few
 functions and nothing else changes. The numbered styles (IEEE, Vancouver) number papers in the
 order the answer first cites them.
+
+Missing metadata ([ADR 0006](adr/0006-citation-styles-in-the-shell.md)): nothing is ever invented.
+A missing journal, volume, issue or page range shows in place as a marked gap (`[volume missing]`,
+words on a tinted chip). A paper missing an author, title or year says it cannot be formatted in
+that style. Chips and names mark a missing year or author the same way. "Copy" copies exactly what
+is shown, gaps included (`ReferenceList`, `referenceParts`).
 
 Limits to know about: journal articles only; no DOIs, editors or books; sentence case for titles
 cannot spot proper nouns; no handling of 7 or more authors. Always check against your own style

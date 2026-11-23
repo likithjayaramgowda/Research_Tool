@@ -39,10 +39,6 @@ const SAMPLE_PAPER: Paper = {
   title: "Sample paper",
   authors: [{ family: "Calloway", given: "Aisha Marie" }],
   year: 2023,
-  journal: "",
-  volume: "",
-  issue: "",
-  articlePages: "",
   pageCount: 18,
   status: "ready",
 };

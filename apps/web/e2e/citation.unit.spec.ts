@@ -2,14 +2,18 @@ import { expect, test } from "@playwright/test";
 
 import {
   abbreviateRange,
+  gapText,
   inTextLabel,
   isCitationStyle,
+  missingRequired,
   referenceOrder,
+  referenceParts,
   referenceText,
   sentenceCase,
   shortName,
 } from "../src/lib/citation";
 import { answer, papers, passageById } from "../src/lib/fixtures";
+import type { CitationStyle, Paper } from "../src/lib/types";
 
 // These test the pure formatting functions directly: no browser involved.
 const threeAuthors = papers[0]; // Calloway, Mbeki and Trenholm
@@ -130,4 +134,147 @@ test("isCitationStyle recognises the six styles and nothing else", () => {
   }
   expect(isCitationStyle("bluebook")).toBe(false);
   expect(isCitationStyle(null)).toBe(false);
+});
+
+// --- Missing metadata (ADR 0006): render what is known, mark gaps, never invent ----------------
+
+const STYLE_IDS: CitationStyle[] = ["apa", "mla", "chicago", "harvard", "ieee", "vancouver"];
+const noDetails: Paper = {
+  ...papers[0],
+  volume: undefined,
+  issue: undefined,
+  articlePages: undefined,
+};
+
+test.describe("references with missing volume, issue and page range", () => {
+  const expected: Record<CitationStyle, string> = {
+    apa: "Calloway, A. M., Mbeki, C., & Trenholm, D. (2023). Sleep regularity and attention lapses in rotating-shift workers. Journal of Shift Work Research, [volume missing]([issue missing]), [page range missing].",
+    mla: "Calloway, Aisha Marie, et al. “Sleep Regularity and Attention Lapses in Rotating-Shift Workers.” Journal of Shift Work Research, vol. [volume missing], no. [issue missing], 2023, pp. [page range missing].",
+    chicago:
+      "Calloway, Aisha Marie, Chidi Mbeki, and Dara Trenholm. 2023. “Sleep Regularity and Attention Lapses in Rotating-Shift Workers.” Journal of Shift Work Research [volume missing] ([issue missing]): [page range missing].",
+    harvard:
+      "Calloway, A.M., Mbeki, C. and Trenholm, D. (2023) ‘Sleep regularity and attention lapses in rotating-shift workers’, Journal of Shift Work Research, [volume missing]([issue missing]), pp. [page range missing].",
+    ieee: "[1] A. M. Calloway, C. Mbeki, and D. Trenholm, “Sleep regularity and attention lapses in rotating-shift workers,” Journal of Shift Work Research, vol. [volume missing], no. [issue missing], pp. [page range missing], 2023.",
+    vancouver:
+      "1. Calloway AM, Mbeki C, Trenholm D. Sleep regularity and attention lapses in rotating-shift workers. Journal of Shift Work Research. 2023;[volume missing]([issue missing]):[page range missing].",
+  };
+  for (const style of STYLE_IDS) {
+    test(`${style}: known parts are kept and each gap is marked in place`, () => {
+      expect(referenceText(noDetails, style, 1)).toBe(expected[style]);
+    });
+    test(`${style}: exactly the three gaps are flagged, and nothing else`, () => {
+      const parts = referenceParts(noDetails, style, 1);
+      expect(parts.filter((p) => p.gap).map((p) => p.text)).toEqual([
+        gapText("volume"),
+        gapText("issue"),
+        gapText("page range"),
+      ]);
+      expect(parts.some((p) => p.unusable)).toBe(false);
+    });
+  }
+});
+
+test.describe("complete references have no gaps in any style", () => {
+  for (const style of STYLE_IDS) {
+    test(style, () => {
+      const parts = referenceParts(threeAuthors, style, 1);
+      expect(parts.some((p) => p.gap || p.unusable)).toBe(false);
+      expect(referenceText(threeAuthors, style, 1)).not.toContain("missing");
+    });
+  }
+});
+
+test.describe("a missing journal, or only some details, is also marked", () => {
+  test("missing journal is a gap, not a guess", () => {
+    const text = referenceText({ ...threeAuthors, journal: undefined }, "apa", 1);
+    expect(text).toContain("workers. [journal missing], 14(2), 412–429.");
+  });
+  test("a known volume stays while an unknown issue is marked", () => {
+    const text = referenceText({ ...threeAuthors, issue: undefined }, "mla", 1);
+    expect(text).toContain("vol. 14, no. [issue missing], 2023");
+  });
+  test("blank and whitespace-only values count as missing", () => {
+    const text = referenceText({ ...threeAuthors, volume: "  ", issue: "" }, "ieee", 1);
+    expect(text).toContain("vol. [volume missing], no. [issue missing]");
+  });
+  test("a gap is never italic, and the journal and volume still are when present", () => {
+    const parts = referenceParts({ ...threeAuthors, journal: undefined }, "apa", 1);
+    expect(parts.find((p) => p.gap)?.italic).toBeUndefined();
+    const full = referenceParts(threeAuthors, "apa", 1);
+    expect(full.filter((p) => p.italic).map((p) => p.text)).toEqual([
+      "Journal of Shift Work Research",
+      "14",
+    ]);
+  });
+  test("page ranges are only shortened when there is one", () => {
+    expect(referenceText({ ...threeAuthors, articlePages: undefined }, "chicago", 1)).toContain(
+      "(2): [page range missing].",
+    );
+    expect(referenceText(threeAuthors, "vancouver", 1)).toContain("412-29");
+  });
+});
+
+test.describe("a reference missing what a style cannot do without says so", () => {
+  const noAuthors: Paper = { ...threeAuthors, authors: [] };
+  const noYear: Paper = { ...threeAuthors, year: undefined };
+  const noTitle: Paper = { ...threeAuthors, title: "  " };
+  for (const style of STYLE_IDS) {
+    test(`${style}: no authors, no year or no title gives one plain message`, () => {
+      for (const [paper, field] of [
+        [noAuthors, "author"],
+        [noYear, "year"],
+        [noTitle, "title"],
+      ] as const) {
+        const parts = referenceParts(paper, style, 1);
+        expect(parts).toHaveLength(1);
+        expect(parts[0].unusable).toBe(true);
+        expect(parts[0].text).toContain("cannot be formatted");
+        expect(parts[0].text).toContain(`Missing: ${field}.`);
+        // Not a malformed entry: none of the entry's own punctuation or numbering is there.
+        expect(parts[0].text).not.toContain("Journal of Shift Work Research");
+      }
+    });
+  }
+  test("several missing fields are all listed", () => {
+    const text = referenceText({ ...threeAuthors, authors: [], year: undefined }, "apa", 1);
+    expect(text).toContain("Missing: author, year.");
+  });
+  test("missingRequired says what is lacking, and nothing for a complete paper", () => {
+    expect(missingRequired(noAuthors, "mla")).toEqual(["author"]);
+    expect(missingRequired(threeAuthors, "mla")).toEqual([]);
+    expect(missingRequired(noDetails, "apa")).toEqual([]); // volume, issue, pages degrade instead
+  });
+});
+
+test.describe("labels and names never invent a year or an author", () => {
+  test("a missing year is marked in chips and short names", () => {
+    const paper: Paper = { ...threeAuthors, year: undefined };
+    expect(inTextLabel(paper, 4, "apa", 1)).toBe("Calloway et al., [year missing], p. 4");
+    expect(inTextLabel(paper, 4, "chicago", 1)).toContain("[year missing]");
+    expect(shortName(paper, "apa")).toBe("Calloway et al., [year missing]");
+    expect(shortName(paper, "mla")).toBe("Calloway et al."); // MLA short names have no year
+  });
+  test("missing authors are marked, never replaced with a guess", () => {
+    const paper: Paper = { ...threeAuthors, authors: [] };
+    expect(inTextLabel(paper, 4, "apa", 1)).toBe("[author missing], 2023, p. 4");
+    expect(shortName(paper, "harvard")).toBe("[author missing], 2023");
+  });
+  test("nothing like n.d. or Anonymous ever appears", () => {
+    const bare: Paper = { ...threeAuthors, authors: [], year: undefined, journal: undefined };
+    for (const style of STYLE_IDS) {
+      const text = `${referenceText(bare, style, 1)} ${inTextLabel(bare, 1, style, 1)}`;
+      expect(text).not.toMatch(/n\.d\.|anonymous|unknown/i);
+    }
+  });
+});
+
+test("the copied text is the displayed text: one function feeds both", () => {
+  for (const style of STYLE_IDS) {
+    for (const paper of [threeAuthors, noDetails, { ...threeAuthors, authors: [] }]) {
+      const shown = referenceParts(paper, style, 2)
+        .map((p) => p.text)
+        .join("");
+      expect(referenceText(paper, style, 2)).toBe(shown);
+    }
+  }
 });

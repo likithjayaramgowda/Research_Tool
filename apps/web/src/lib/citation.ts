@@ -43,7 +43,64 @@ export function styleInfo(style: CitationStyle): StyleInfo {
 export interface Part {
   text: string;
   italic?: boolean;
+  /** A visible marker for a field the paper's metadata does not have, such as "[volume missing]". */
+  gap?: boolean;
+  /** The whole entry could not be formatted; `text` says why. */
+  unusable?: boolean;
 }
+
+// --- Missing metadata (ADR 0006) ---------------------------------------------------------------
+// Rule: never invent. A missing field is shown as a marked gap in its place, and an entry that
+// lacks what a style cannot do without says so instead of rendering a malformed reference.
+
+export type Field = "author" | "title" | "year" | "journal" | "volume" | "issue" | "page range";
+
+/** The text shown in place of a missing field. TODO(copy): the owner rewrites this wording. */
+export function gapText(field: Field): string {
+  return `[${field} missing]`;
+}
+
+/** What each style cannot do without. Today all six agree; the table lets one style differ later. */
+const REQUIRED_FIELDS: Record<CitationStyle, Field[]> = {
+  apa: ["author", "title", "year"],
+  mla: ["author", "title", "year"],
+  chicago: ["author", "title", "year"],
+  harvard: ["author", "title", "year"],
+  ieee: ["author", "title", "year"],
+  vancouver: ["author", "title", "year"],
+};
+
+const has = (value: string | number | undefined | null): boolean =>
+  value !== undefined && value !== null && String(value).trim() !== "";
+
+/** The required fields this paper lacks for the style. Empty means the entry can be formatted. */
+export function missingRequired(paper: Paper, style: CitationStyle): Field[] {
+  return REQUIRED_FIELDS[style].filter((field) => {
+    if (field === "author") return paper.authors.length === 0;
+    if (field === "title") return !has(paper.title);
+    return !has(paper.year);
+  });
+}
+
+/** TODO(copy): the owner rewrites this wording. */
+export function unusableMessage(style: CitationStyle, missing: Field[]): string {
+  return `TODO(copy): This reference cannot be formatted in ${styleInfo(style).label}. Missing: ${missing.join(", ")}.`;
+}
+
+/** A field's value as a part, or a marked gap when it is missing. */
+function field(
+  value: string | undefined,
+  name: Field,
+  opts: { italic?: boolean; format?: (v: string) => string } = {},
+): Part {
+  if (!has(value)) return { text: gapText(name), gap: true };
+  const text = opts.format ? opts.format(value!.trim()) : value!.trim();
+  return opts.italic ? { text, italic: true } : { text };
+}
+
+const plain = (text: string): Part => ({ text });
+
+const yearText = (paper: Paper): string => (has(paper.year) ? String(paper.year) : gapText("year"));
 
 // --- Small helpers --------------------------------------------------------------------------
 
@@ -131,6 +188,7 @@ function familyNames(
   opts: { and: string; oxford: boolean; listUpTo: number },
 ): string {
   const families = authors.map((a) => a.family);
+  if (families.length === 0) return gapText("author");
   if (families.length > opts.listUpTo) return `${families[0]} et al.`;
   return joinWithAnd(families, opts.and, opts.oxford);
 }
@@ -147,7 +205,7 @@ export function inTextLabel(
   style: CitationStyle,
   number: number,
 ): string {
-  const year = paper.year;
+  const year = yearText(paper);
   switch (style) {
     case "apa":
       return `${familyNames(paper.authors, { and: "&", oxford: false, listUpTo: 2 })}, ${year}, p. ${page}`;
@@ -173,7 +231,7 @@ export function shortName(paper: Paper, style: CitationStyle): string {
     style === "chicago" || style === "harvard"
       ? { and: "and", oxford: style === "chicago", listUpTo: 3 }
       : { and: "&", oxford: false, listUpTo: 2 };
-  return `${familyNames(paper.authors, opts)}, ${paper.year}`;
+  return `${familyNames(paper.authors, opts)}, ${yearText(paper)}`;
 }
 
 // --- Reference list entries ------------------------------------------------------------------
@@ -199,58 +257,108 @@ function apaAuthors(authors: Author[]): string {
   return `${names.slice(0, -1).join(", ")}, & ${names[names.length - 1]}`;
 }
 
-/** The full reference-list entry for a paper, as parts so journals and volumes can be italic. */
+/**
+ * The full reference-list entry for a paper, as parts so journals and volumes can be italic and
+ * gaps can be marked. The same parts are shown on screen and copied, so the two cannot differ.
+ * Missing journal, volume, issue or page range appear as visible gaps in their place; a paper
+ * missing an author, title or year gives a single part saying it cannot be formatted.
+ */
 export function referenceParts(paper: Paper, style: CitationStyle, number: number): Part[] {
-  const { journal, volume, issue, year, articlePages: pages } = paper;
+  const missing = missingRequired(paper, style);
+  if (missing.length > 0) return [{ text: unusableMessage(style, missing), unusable: true }];
+
+  const year = String(paper.year).trim();
+  const journal = field(paper.journal, "journal", { italic: true });
+  const volume = (italic: boolean) => field(paper.volume, "volume", { italic });
+  const issue = field(paper.issue, "issue");
+  const pages = (dash: string | null) =>
+    field(paper.articlePages, "page range", {
+      format: dash === null ? undefined : (v) => abbreviateRange(v, dash),
+    });
+
   switch (style) {
     case "apa":
       return [
-        { text: `${apaAuthors(paper.authors)} (${year}). ${sentenceCase(paper.title)}. ` },
-        { text: journal, italic: true },
-        { text: ", " },
-        { text: volume, italic: true },
-        { text: `(${issue}), ${pages}.` },
+        plain(`${apaAuthors(paper.authors)} (${year}). ${sentenceCase(paper.title)}. `),
+        journal,
+        plain(", "),
+        volume(true),
+        plain("("),
+        issue,
+        plain("), "),
+        pages(null),
+        plain("."),
       ];
     case "mla":
       return [
-        { text: `${mlaAuthors(paper.authors)} “${paper.title}.” ` },
-        { text: journal, italic: true },
-        { text: `, vol. ${volume}, no. ${issue}, ${year}, pp. ${pages}.` },
+        plain(`${mlaAuthors(paper.authors)} “${paper.title}.” `),
+        journal,
+        plain(", vol. "),
+        volume(false),
+        plain(", no. "),
+        issue,
+        plain(`, ${year}, pp. `),
+        pages(null),
+        plain("."),
       ];
     case "chicago":
       return [
-        { text: `${chicagoAuthors(paper.authors)}. ${year}. “${paper.title}.” ` },
-        { text: journal, italic: true },
-        { text: ` ${volume} (${issue}): ${abbreviateRange(pages, "–")}.` },
+        plain(`${chicagoAuthors(paper.authors)}. ${year}. “${paper.title}.” `),
+        journal,
+        plain(" "),
+        volume(false),
+        plain(" ("),
+        issue,
+        plain("): "),
+        pages("–"),
+        plain("."),
       ];
     case "harvard":
       return [
-        {
-          text: `${joinWithAnd(paper.authors.map(harvardName), "and", false)} (${year}) ‘${sentenceCase(paper.title)}’, `,
-        },
-        { text: journal, italic: true },
-        { text: `, ${volume}(${issue}), pp. ${pages}.` },
+        plain(
+          `${joinWithAnd(paper.authors.map(harvardName), "and", false)} (${year}) ‘${sentenceCase(paper.title)}’, `,
+        ),
+        journal,
+        plain(", "),
+        volume(false),
+        plain("("),
+        issue,
+        plain("), pp. "),
+        pages(null),
+        plain("."),
       ];
     case "ieee":
       return [
-        {
-          text: `[${number}] ${joinWithAnd(paper.authors.map(ieeeName), "and", true)}, “${sentenceCase(paper.title)},” `,
-        },
-        { text: journal, italic: true },
-        { text: `, vol. ${volume}, no. ${issue}, pp. ${pages}, ${year}.` },
+        plain(
+          `[${number}] ${joinWithAnd(paper.authors.map(ieeeName), "and", true)}, “${sentenceCase(paper.title)},” `,
+        ),
+        journal,
+        plain(", vol. "),
+        volume(false),
+        plain(", no. "),
+        issue,
+        plain(", pp. "),
+        pages(null),
+        plain(`, ${year}.`),
       ];
     case "vancouver":
       return [
-        {
-          text: `${number}. ${paper.authors.map(vancouverName).join(", ")}. ${sentenceCase(paper.title)}. `,
-        },
-        { text: journal, italic: true },
-        { text: `. ${year};${volume}(${issue}):${abbreviateRange(pages, "-")}.` },
+        plain(
+          `${number}. ${paper.authors.map(vancouverName).join(", ")}. ${sentenceCase(paper.title)}. `,
+        ),
+        journal,
+        plain(`. ${year};`),
+        volume(false),
+        plain("("),
+        issue,
+        plain("):"),
+        pages("-"),
+        plain("."),
       ];
   }
 }
 
-/** The same entry as plain text, for copying. */
+/** The same entry as plain text, for copying: exactly what is displayed, gaps included. */
 export function referenceText(paper: Paper, style: CitationStyle, number: number): string {
   return referenceParts(paper, style, number)
     .map((p) => p.text)
@@ -283,6 +391,6 @@ export function referenceOrder(
     .map((paper) => ({ paper, number: numberOf(paper.id) }));
   if (styleInfo(style).kind === "numbered") return cited;
   return [...cited].sort((a, b) =>
-    a.paper.authors[0].family.localeCompare(b.paper.authors[0].family),
+    (a.paper.authors[0]?.family ?? "").localeCompare(b.paper.authors[0]?.family ?? ""),
   );
 }

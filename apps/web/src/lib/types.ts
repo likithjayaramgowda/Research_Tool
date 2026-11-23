@@ -20,17 +20,25 @@ export interface Author {
 /** The citation styles LitLens can format into. */
 export type CitationStyle = "apa" | "mla" | "chicago" | "harvard" | "ieee" | "vancouver";
 
+/**
+ * A paper's metadata, as far as it is known. Slice 1.2 will fill this from the parser, which may
+ * not find everything, so everything except the id can be missing (see ADR 0006). Missing means
+ * undefined or blank; the citation code shows a visible gap and never fills in a guess.
+ */
 export interface Paper {
   id: string;
   /** As printed on the paper, in title case. Styles that want sentence case convert it. */
   title: string;
+  /** Empty when the parser found no authors. */
   authors: Author[];
-  year: number;
-  journal: string;
-  volume: string;
-  issue: string;
+  year?: number;
+  journal?: string;
+  volume?: string;
+  issue?: string;
   /** Page range in the journal, with an en dash, for example "412–429". */
-  articlePages: string;
+  articlePages?: string;
+  /** Not printed for journal articles; kept for when books and reports are supported. */
+  publisher?: string;
   /** Number of pages in the uploaded PDF. */
   pageCount: number;
   status: PaperStatus;
