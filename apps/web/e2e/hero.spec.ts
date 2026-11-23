@@ -45,7 +45,7 @@ test.describe("landing page hero", () => {
     await expect(page.getByText("Built by Likith Jayaram Gowda")).toBeVisible();
     await expect(page.getByRole("link", { name: "Source code on GitHub" })).toHaveAttribute(
       "href",
-      "https://github.com/likithjayaramgowda/litlens",
+      "https://github.com/likithjayaramgowda/Research_Tool",
     );
     await expect(
       page.getByRole("contentinfo").getByRole("link", { name: "How it works" }),

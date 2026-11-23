@@ -13,6 +13,9 @@ The project owner, author and copyright holder is **Likith Jayaram Gowda**, a da
 (strong Python and SQL, newer to web apps) who is learning from the code. Explain what you do and
 why, in plain language.
 
+The GitHub repo is named `Research_Tool` (`likithjayaramgowda/Research_Tool`) while the product is
+LitLens, on purpose: an older archived repo already holds the LitLens name. Do not "correct" either.
+
 ## Fixed decisions (ask the owner before changing any of these)
 - Free tiers only, and no payment card on any service.
 - Web: Next.js (App Router, TypeScript strict), Tailwind, shadcn/ui, Motion. Hosted on Vercel Hobby.

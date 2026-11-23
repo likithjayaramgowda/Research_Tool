@@ -7,7 +7,7 @@ export function SiteFooter() {
       <div className="mx-auto flex w-full max-w-6xl flex-wrap items-baseline gap-x-10 gap-y-3 px-4 py-8 text-sm sm:px-8">
         <p>Built by Likith Jayaram Gowda</p>
         <a
-          href="https://github.com/likithjayaramgowda/litlens"
+          href="https://github.com/likithjayaramgowda/Research_Tool"
           className="rounded-md underline underline-offset-4"
         >
           Source code on GitHub
