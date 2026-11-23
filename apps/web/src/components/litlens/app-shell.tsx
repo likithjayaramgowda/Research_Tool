@@ -90,17 +90,20 @@ export function AppShell() {
       {/* Narrow screens: the library as a drawer... */}
       <Sheet open={libraryOpen} onOpenChange={setLibraryOpen}>
         <SheetContent side="left" className="w-[min(22rem,90vw)] overflow-y-auto p-4">
-          <SheetHeader className="p-0">
-            <SheetTitle>Library</SheetTitle>
-            <SheetDescription className="sr-only">Your papers and the upload area</SheetDescription>
-          </SheetHeader>
+          {/* One visible "Library" heading: the drawer's own title, which labels the drawer. */}
           <LibraryPane
             selectedId={selectedPaper}
             onSelect={(id) => {
               setSelectedPaper(id);
               setLibraryOpen(false);
             }}
+            renderHeading={(id) => (
+              <SheetTitle id={id} className="text-lg">
+                Library
+              </SheetTitle>
+            )}
           />
+          <SheetDescription className="sr-only">Your papers and the upload area</SheetDescription>
         </SheetContent>
       </Sheet>
 
