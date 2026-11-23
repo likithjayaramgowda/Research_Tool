@@ -4,7 +4,7 @@ import { expect, test, type Page } from "@playwright/test";
 const answerChip = (page: Page, label: string) =>
   page
     .locator("article", { hasText: "Does irregular sleep affect attention" })
-    .getByRole("button", { name: `Show source: ${label}` });
+    .locator("button[data-citation-chip]", { hasText: label });
 const passage = (page: Page, id: string) =>
   page.getByRole("region", { name: "Source passages" }).locator(`[data-passage-id="${id}"]`);
 

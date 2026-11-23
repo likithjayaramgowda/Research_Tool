@@ -11,6 +11,7 @@ import {
   referenceOrder,
   referenceParts,
   referenceText,
+  shortName,
   styleInfo,
 } from "@/lib/citation";
 import { paperById, papers, passageById } from "@/lib/fixtures";
@@ -63,22 +64,44 @@ export function Answer({
         <h3 className="font-heading mb-4 text-lg leading-snug">{answer.question}</h3>
       )}
       <p className="reading">
-        {answer.sentences.map((sentence) => (
-          <span key={sentence.id}>
-            {sentence.text}{" "}
-            {sentence.citations.map((id) => {
-              const passage = passageById(id);
-              const paper = passage && paperById(passage.paperId);
-              if (!passage || !paper) return null;
-              const label = inTextLabel(paper, passage.page, style, numberOf(paper.id));
-              return (
-                <span key={id} className="mr-1 inline-block">
-                  <CitationChip passageId={id} label={label} />
-                </span>
-              );
-            })}{" "}
-          </span>
-        ))}
+        {answer.sentences.map((sentence) => {
+          // The last word travels with the first chip (a non-breaking group), so a chip can never
+          // start a line and read as if it introduced the next sentence.
+          const cut = sentence.text.lastIndexOf(" ") + 1;
+          const chips = sentence.citations.flatMap((id) => {
+            const passage = passageById(id);
+            const paper = passage && paperById(passage.paperId);
+            if (!passage || !paper) return [];
+            const label = inTextLabel(paper, passage.page, style, numberOf(paper.id));
+            // The name must contain the visible text (WCAG 2.5.3). Numbered styles show only
+            // "[1, p. 4]", which means nothing when read aloud, so they add the paper too.
+            const accessibleName =
+              styleInfo(style).kind === "numbered"
+                ? `Source: ${label}, ${shortName(paper, style)}`
+                : `Source: ${label}`;
+            return [
+              <CitationChip
+                key={id}
+                passageId={id}
+                sentenceId={sentence.id}
+                label={label}
+                accessibleName={accessibleName}
+              />,
+            ];
+          });
+          return (
+            <span key={sentence.id} data-sentence-id={sentence.id} className="sentence">
+              {sentence.text.slice(0, cut)}
+              <span className="whitespace-nowrap">
+                {sentence.text.slice(cut)}
+                {chips.length > 0 && <> {chips[0]}</>}
+              </span>
+              {chips.slice(1).map((chip) => (
+                <span key={chip.key}> {chip}</span>
+              ))}{" "}
+            </span>
+          );
+        })}
       </p>
 
       {showReferences && references.length > 0 && (

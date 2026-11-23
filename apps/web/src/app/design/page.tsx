@@ -425,8 +425,16 @@ export default function DesignPage() {
           <Specimen label="CitationChip: resting and chosen">
             <LensProvider>
               <div className="flex flex-wrap items-center gap-3">
-                <CitationChip passageId="x1" label="Calloway 2023, p. 4" />
-                <CitationChip passageId="x2" label="Hartigan 2022, p. 3" />
+                <CitationChip
+                  passageId="x1"
+                  label="Calloway 2023, p. 4"
+                  accessibleName="Source: Calloway 2023, p. 4"
+                />
+                <CitationChip
+                  passageId="x2"
+                  label="Hartigan 2022, p. 3"
+                  accessibleName="Source: Hartigan 2022, p. 3"
+                />
                 <span className="text-graphite text-sm">Choose one to see the chosen state.</span>
               </div>
             </LensProvider>

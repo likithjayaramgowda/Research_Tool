@@ -12,7 +12,7 @@ test("demo with the lens on a citation (wide)", async ({ page }) => {
   await page.goto("/demo");
   await page
     .locator("#conversation")
-    .getByRole("button", { name: "Show source: Hartigan et al., 2022, p. 3" })
+    .getByRole("button", { name: "Source: Hartigan et al., 2022, p. 3" })
     .click();
   await expect(
     page.getByRole("region", { name: "Source passages" }).locator('[data-passage-id="s3"]'),
@@ -50,7 +50,7 @@ test("phone: library drawer and source bottom sheet", async ({ page }) => {
   await expect(page.getByRole("dialog", { name: "Library" })).toBeHidden();
   await page
     .locator("#conversation")
-    .getByRole("button", { name: "Show source: Calloway et al., 2023, p. 7" })
+    .getByRole("button", { name: "Source: Calloway et al., 2023, p. 7" })
     .click();
   await expect(page.getByRole("dialog", { name: "Source" })).toBeVisible();
   await page.waitForTimeout(300);

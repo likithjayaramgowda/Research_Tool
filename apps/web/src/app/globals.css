@@ -203,6 +203,19 @@
   }
 }
 
+/*
+ * Answer sentences: while a citation chip is hovered or keyboard-focused, tint the sentence it
+ * supports. A quiet ink wash, never the highlighter yellow (yellow is evidence in the source).
+ */
+@layer components {
+  .sentence {
+    @apply rounded-sm box-decoration-clone;
+  }
+  .sentence:has([data-citation-chip]:is(:hover, :focus-visible)) {
+    background: color-mix(in srgb, var(--ink) 9%, transparent);
+  }
+}
+
 /* Motion only responds to an action, and switches off entirely when the visitor asks. */
 @media (prefers-reduced-motion: reduce) {
   *,

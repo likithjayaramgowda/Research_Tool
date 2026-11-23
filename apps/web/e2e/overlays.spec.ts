@@ -37,7 +37,7 @@ for (const scheme of ["light", "dark"] as const) {
       await page.goto("/demo");
       await page
         .locator("#conversation")
-        .getByRole("button", { name: "Show source: Calloway et al., 2023, p. 4" })
+        .getByRole("button", { name: "Source: Calloway et al., 2023, p. 4" })
         .click();
       await expect(page.getByRole("dialog", { name: "Source" })).toBeVisible();
       await noSeriousIssues(page);

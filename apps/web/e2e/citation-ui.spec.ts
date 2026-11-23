@@ -6,7 +6,7 @@ async function chooseStyle(page: Page, name: RegExp) {
   await expect(page.getByRole("menu")).toBeHidden(); // it closes itself once you choose
 }
 const chip = (page: Page, label: string) =>
-  page.locator("#conversation").getByRole("button", { name: `Show source: ${label}` });
+  page.locator("#conversation").locator("button[data-citation-chip]", { hasText: label });
 
 test.describe("citation style", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
@@ -55,7 +55,7 @@ test.describe("citation style", () => {
     await expect(chip(page, "Calloway, Mbeki and Trenholm, 2023, p. 4")).toBeVisible();
     await page.goto("/");
     await expect(
-      page.getByRole("button", { name: "Show source: Calloway, Mbeki and Trenholm, 2023, p. 4" }),
+      page.getByRole("button", { name: "Source: Calloway, Mbeki and Trenholm, 2023, p. 4" }),
     ).toBeVisible();
   });
 

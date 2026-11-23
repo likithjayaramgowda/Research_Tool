@@ -108,7 +108,7 @@ LitLens components in `apps/web/src/components/litlens/`:
 | `CitationChip` | The pill that names a source, such as "Calloway 2023, p. 4". A real button. |
 | `SourcePassage` | A quoted passage; idle, focused (yellow) or dimmed. |
 | `SourceSheet` | The scrolling sheet of passages grouped by paper. |
-| `Answer` | Sentences as one paragraph, each followed by its chips. |
+| `Answer` | Sentences as one paragraph, each in a `data-sentence-id` span, followed by its chips. The last word is bound to the first chip (no wrapping between them) so a chip never starts a line; hovering or focusing a chip tints its sentence (ink wash, never yellow). Chips carry `data-cites` and the accessible name "Source: " plus their visible text. |
 | `PaperRow` | A library row with status Uploading, Reading, Ready or Failed. |
 | `PaperCard` | Title plus Question, Method, Data, Findings, Limitations. |
 | `UploadDropzone` | Drag or choose PDFs. UI only. |

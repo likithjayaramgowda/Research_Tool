@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 const passage = (page: Page, id: string) =>
   page.getByRole("region", { name: "Source passages" }).locator(`[data-passage-id="${id}"]`);
 const chip = (page: Page, label: string) =>
-  page.locator("#conversation").getByRole("button", { name: `Show source: ${label}` });
+  page.locator("#conversation").locator("button[data-citation-chip]", { hasText: label });
 
 for (const route of ["/demo", "/app"]) {
   test.describe(`${route} on a wide screen`, () => {

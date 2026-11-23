@@ -23,14 +23,14 @@ test.describe("landing page hero", () => {
     await expect(passage(page, "s1")).toHaveAttribute("data-lens-state", "focused", {
       timeout: 3000,
     });
-    await page.getByRole("button", { name: "Show source: Calloway et al., 2023, p. 7" }).click();
+    await page.getByRole("button", { name: "Source: Calloway et al., 2023, p. 7" }).click();
     await expect(passage(page, "s2")).toHaveAttribute("data-lens-state", "focused");
     await expect(passage(page, "s1")).toHaveAttribute("data-lens-state", "dimmed");
   });
 
   test("a visitor who chooses first is not overridden by the autoplay", async ({ page }) => {
     await page.goto("/");
-    await page.getByRole("button", { name: "Show source: Calloway et al., 2023, p. 7" }).click();
+    await page.getByRole("button", { name: "Source: Calloway et al., 2023, p. 7" }).click();
     await page.waitForTimeout(1800);
     await expect(passage(page, "s2")).toHaveAttribute("data-lens-state", "focused");
   });
