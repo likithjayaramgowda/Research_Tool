@@ -28,6 +28,11 @@ LitLens, on purpose: an older archived repo already holds the LitLens name. Do n
 - Public GitHub repo, MIT licence, no AGPL dependencies (so no PyMuPDF). Never commit secrets.
 - Python 3.12 (Vercel's default Python runtime; checked in slice 0.1).
 
+**Read `docs/requirements-and-decisions.md` at the start of every slice.** It is the owner's
+decision log (D1, D2, …), requirements register (R1, R2, …) and data model; prompts refer to
+those IDs. It is a copy of a document the owner maintains outside the repo, so do not edit it;
+ask the owner to update it instead.
+
 See `docs/adr/` for the reasoning behind these. The visual rules (colour meanings, type, radii, the
 "lens" interaction) are in `docs/design.md`; read it before changing any UI. Yellow means evidence
 only and red means errors only.
@@ -40,7 +45,7 @@ worker/           Modal app (litlens_worker/app.py), tests in worker/tests
 packages/core/    Shared pure-Python package litlens_core, tests in packages/core/tests
 supabase/         Database migrations, edge functions (empty until slice 0.3)
 evals/            Evaluation harness for answer quality (placeholder)
-docs/             PLAN.md, adr/ (decision records), prompts/ (log of how it was built)
+docs/             requirements-and-decisions.md, PLAN.md, adr/, prompts/ (log of how it was built)
 ```
 Python is one uv workspace (root `pyproject.toml`, one `uv.lock`). Web is a separate pnpm project.
 
