@@ -1,7 +1,7 @@
 # 8. One narrow privileged write path for usage and activity (D22)
 
 Date: 2026-11-25
-Status: Accepted
+Status: Accepted; allowances and activity amended by [ADR 0010](0010-quota-governance.md) and [ADR 0011](0011-activity-and-allowance-reads.md)
 
 ## Context
 [ADR 0007](0007-rls-tenancy-boundary.md) made RLS the tenancy boundary: the API queries with the
