@@ -190,25 +190,61 @@ def test_user_cannot_set_last_active_at_through_the_function(bob: Session) -> No
 
 
 # ── activity (D25) ─────────────────────────────────────────────────────────────────────────
+def _summary(allowance: int, used: int) -> dict[str, int]:
+    return {"allowance": allowance, "used": used, "remaining": max(allowance - used, 0)}
+
+
 def test_activity_marks_a_signed_in_user_active(bob: Session) -> None:
     before = _last_active(bob)
-    assert _record(bob, "activity") == (200, None)
+    assert _record(bob, "activity")[0] == 200
     after = _last_active(bob)
     assert after > before
     assert after < datetime.now(UTC) + timedelta(minutes=1)
 
 
+def test_activity_returns_a_signed_in_users_allowance(bob: Session) -> None:
+    """The web app reads what's left from here, never from its own copy of the numbers."""
+    assert _record(bob, "activity") == (
+        200,
+        {
+            "questions": _summary(QUESTIONS, _used(bob)),
+            "gap_checks": _summary(GAP_CHECKS, _used(bob, "gap_checks")),
+        },
+    )
+
+
+def test_activity_returns_an_anonymous_sessions_allowance(anon: Session) -> None:
+    assert _record(anon, "activity") == (
+        200,
+        {
+            "questions": _summary(ANON_QUESTIONS, _used(anon)),
+            "gap_checks": _summary(0, 0),
+        },
+    )
+
+
+def test_activity_follows_usage_as_it_happens(make_user: Callable[[], Session]) -> None:
+    fresh = make_user()
+    assert _record(fresh, "activity")[1]["questions"] == _summary(QUESTIONS, 0)
+    _record(fresh)
+    _record(fresh, "gap_check")
+    assert _record(fresh, "activity")[1] == {
+        "questions": _summary(QUESTIONS, 1),
+        "gap_checks": _summary(GAP_CHECKS, 1),
+    }
+
+
 def test_activity_counts_nothing_and_spends_nothing(bob: Session) -> None:
     before = (_used(bob), _used(bob, "gap_checks"))
     for _ in range(QUESTIONS + 1):  # more pings than the whole question allowance
-        assert _record(bob, "activity") == (200, None)
+        assert _record(bob, "activity")[0] == 200
     assert (_used(bob), _used(bob, "gap_checks")) == before
     assert _record(bob) == (200, QUESTIONS - (before[0] + 1))  # the allowance is untouched
 
 
 def test_anonymous_activity_writes_nothing(anon: Session) -> None:
     before = anon.select("usage_daily").rows
-    assert _record(anon, "activity") == (200, None)
+    assert _record(anon, "activity")[0] == 200
     assert anon.select("usage_daily").rows == before
 
 

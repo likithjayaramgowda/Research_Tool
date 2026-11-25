@@ -137,3 +137,8 @@ def test_parse_reads_rows_count_and_error_code() -> None:
     assert parse_response(returned) == Result(
         status=200, rows=[], affected=None, code=None, value=7
     )
+
+    returned_object = httpx2.Response(200, json={"code": "not-an-error"})
+    assert parse_response(returned_object) == Result(
+        status=200, rows=[], affected=None, code=None, value={"code": "not-an-error"}
+    )

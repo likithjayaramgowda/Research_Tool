@@ -82,12 +82,12 @@ begin
     -- Collect what each racer got: a remaining count, or the error it was refused with.
     for n in 1..20 loop
       begin
-        perform * from extensions.dblink_get_result('racer' || n) as t(r integer);
+        perform * from extensions.dblink_get_result('racer' || n) as t(r jsonb);
         insert into outcomes values (n, true, null);
       exception when others then
         insert into outcomes values (n, false, sqlerrm);
       end;
-      perform * from extensions.dblink_get_result('racer' || n, false) as t(r integer);
+      perform * from extensions.dblink_get_result('racer' || n, false) as t(r jsonb);
       perform extensions.dblink_disconnect('racer' || n);
     end loop;
 

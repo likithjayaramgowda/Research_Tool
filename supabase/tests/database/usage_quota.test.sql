@@ -33,7 +33,7 @@ create function pg_temp.act_as(n integer) returns void language sql as $$
   select set_config('request.jwt.claims', json_build_object(
     'sub', pg_temp.uid(n), 'role', 'authenticated', 'is_anonymous', n = 99)::text, true)
 $$;
-create function pg_temp.ask(n integer, kind text default 'question') returns integer
+create function pg_temp.ask(n integer, kind text default 'question') returns jsonb
 language sql as $$
   select pg_temp.act_as(n);
   select public.record_usage(kind);
@@ -43,7 +43,7 @@ $$;
 -- ── ten users spend their whole allowance: 100 weighted questions ──────────────────────────
 -- Each user's ten calls return 9, 8, … 0 remaining: 45 per user, 450 for ten users.
 select is(
-  (select sum(pg_temp.ask(n))::integer from generate_series(1, 10) n, generate_series(1, 10) q),
+  (select sum(pg_temp.ask(n)::integer)::integer from generate_series(1, 10) n, generate_series(1, 10) q),
   450,
   'ten users ask ten questions each, and are told what is left each time'
 );
@@ -77,9 +77,9 @@ select is(pg_temp.global(), 100, 'and charges nothing globally');
 
 -- ── a Gap Check weighs six ─────────────────────────────────────────────────────────────────
 delete from private.usage_global;   -- a fresh day for the counter
-select is(pg_temp.ask(11, 'gap_check'), 0, 'user 11 runs their one Gap Check of the day');
+select is(pg_temp.ask(11, 'gap_check')::integer, 0, 'user 11 runs their one Gap Check of the day');
 select is(pg_temp.global(), 6, 'a Gap Check moves the global counter by 6');
-select is(pg_temp.ask(11), 9, 'a question afterwards moves it by 1');
+select is(pg_temp.ask(11)::integer, 9, 'a question afterwards moves it by 1');
 select is(pg_temp.global(), 7, 'so the counter reads 7');
 
 -- ── refused for the personal allowance: nothing moves ──────────────────────────────────────

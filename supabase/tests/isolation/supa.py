@@ -140,12 +140,14 @@ def parse_response(response: httpx2.Response) -> Result:
     value: Any = None
     if response.content:
         body = response.json()
-        if isinstance(body, list):
+        if response.is_error:
+            # PostgREST error bodies: {"code": ..., "message": ..., "details": ..., "hint": ...}
+            if isinstance(body, dict):
+                code = cast(Row, body).get("code")
+        elif isinstance(body, list):
             rows = cast(list[Row], body)
-        elif isinstance(body, dict):
-            code = cast(Row, body).get("code")
         else:
-            value = body
+            value = body  # a function's return value: a number, an object, ...
     return Result(status=response.status_code, rows=rows, affected=affected, code=code, value=value)
 
 

@@ -1,7 +1,7 @@
 # 11. Activity is any session; users read their own allowance (D25)
 
 Date: 2026-11-25
-Status: Accepted
+Status: Accepted; amended in slice 0.3d (activity returns the allowance)
 
 ## Context
 [ADR 0008](0008-one-narrow-privileged-write-path.md) left two gaps.
@@ -20,8 +20,13 @@ pgTAP check fails CI if another appears.
 ## Decision
 - **A third kind on `record_usage`: `'activity'`.** It counts nothing, spends no allowance, is not
   limited by the global ceiling, and only stamps `last_active_at = now()` for a signed-in caller
-  (an anonymous session has no profile, so nothing is written). It returns NULL. The web app
-  calls it once per session on load.
+  (an anonymous session has no profile, so nothing is written). The web app calls it once per
+  session on load.
+- **`activity` returns the caller's allowance** *(slice 0.3d)*: for questions and Gap Checks, the
+  day's `allowance` (read from `private.daily_allowance`, the same source the metered kinds are
+  checked against), what has been `used`, and what is `remaining`. The web app shows what's left
+  from this and never keeps its own copy of the numbers, which would drift. The metered kinds
+  still return a bare number, so their response is unchanged.
 - **The `usage_daily` select policy widens to `user_id = auth.uid()`**, so every session,
   anonymous included, can read its own row. Writes stay function-only: there is still no insert,
   update or delete policy.
@@ -31,9 +36,11 @@ kind.
 
 ## Consequences
 - Reading a library keeps it alive under D9.
-- The UI computes what's left from the user's own row and the published allowances (10/1 signed
-  in, 3/0 anonymous). Those numbers live in `private.daily_allowance`, which the API roles cannot
-  call, so the web app has to carry the same constants until there is a reason to expose them.
+- The allowances exist in one place, `private.daily_allowance`. A pgTAP test swaps it for
+  different numbers and requires `activity` to report them, so a hardcoded copy in the function
+  cannot creep back in unnoticed.
+- `record_usage` now returns `jsonb` (a number for the metered kinds, an object for `activity`).
+  Changing a return type means dropping and recreating the function, which its migration does.
 - An anonymous session can now see one row of its own; it still cannot see anyone else's, and
   still has no write path to the database (D23).
 - The activity ping is free to call, so a user can stamp themselves active as often as they like.
