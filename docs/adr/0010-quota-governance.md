@@ -1,7 +1,7 @@
-# 10. Quota governance: smaller allowances, a global ceiling, evals on Gemini (D24)
+# 10. Quota governance: smaller allowances, a global ceiling, evals on Groq (D24)
 
 Date: 2026-11-25
-Status: Accepted
+Status: Accepted; part (d), evals, amended in slice 0.3d
 
 ## Context
 Every live question costs Groq tokens, and Groq's free tier is an **organisation-wide** quota:
@@ -15,9 +15,9 @@ budget for a single person, and per-user caps cannot protect a shared quota anyw
 each under a modest allowance still empty it. When the quota runs out, the recruiter link (D1) is
 what breaks.
 
-A second consumer competes for the same quota: evaluation. The nightly 60-question run is ~300K
-tokens, half the day's budget, and each PR's 15-question subset is ~75K. On a busy day, evals
-alone could starve the live demo.
+A second consumer competes for the same quota: evaluation. As first planned, the nightly
+60-question run was ~300K tokens, half the day's budget, and each PR's 15-question subset ~75K. On
+a busy day, evals alone could starve the live demo.
 
 ## Decision
 **(a) Smaller starting allowances.** Signed-in users get 10 questions and 1 Gap Check a day;
@@ -53,10 +53,25 @@ different things:
 Both carry `message: "TODO(copy)"`; the user-facing wording is Likith's to write. The codes come
 from raising SQLSTATE `PGRST`, which lets PostgREST send the function's own JSON body and status.
 
-**(d) Evals run on Gemini, not Groq.** D5 already allows Gemini's free tier for the author's own
-work on public papers, and the demo set is CC BY (D14). The eval harness (slice 2.5) and the CI
-eval jobs must **target the Gemini adapter explicitly**, not inherit the client's default
-provider, so a configuration slip cannot quietly move evals back onto the shared Groq quota.
+**(d) Published evals run on Groq, the production path, and run less often.** *(Amended in
+slice 0.3d; this supersedes the earlier line, recorded below.)*
+
+- Published eval numbers (faithfulness, citation accuracy and the rest, on the public eval page,
+  R14) are measured on **Groq**, the models users actually get. Numbers measured on a model no
+  user ever touches would make the eval page misleading, and it is a portfolio artefact.
+- The full 60-question run moves from nightly to **weekly**: ~300K tokens once a week instead of
+  half the daily budget every day.
+- The per-PR subset **shrinks and is path-filtered**: it runs only when a change touches prompts,
+  retrieval or `packages/core`.
+- **Gemini is for local iteration only**, where the question is whether a prompt change moved the
+  number, not what the number is. Gemini results are never published.
+- Every published run records **provider, model and prompt version**. `eval_runs` has `model` and
+  `prompt_version`; the harness (slice 2.5) must fill them, and record the provider too.
+
+~~Superseded: "Evals run on Gemini, not Groq … the eval harness and the CI eval jobs must target
+the Gemini adapter explicitly."~~ That kept evals off the shared quota, but at the price of
+publishing numbers for the wrong model. Weekly runs and path-filtered PR subsets keep the Groq
+cost of evals small instead.
 
 ## Consequences
 - The ceiling is proven in pgTAP rather than over HTTP: eleven users there cost no sign-ups
@@ -68,7 +83,10 @@ provider, so a configuration slip cannot quietly move evals back onto the shared
   value back inside their own transaction.
 - Question counts are a proxy for tokens. Token accounting (slice 2.2) should move the caps to
   tokens, or cap both (open item 5).
-- Evals measure Gemini-backed answers while users get Groq-backed ones. The harness has to report
-  which provider and model produced each run (`eval_runs.model` already records it), and a
-  Groq-specific regression can slip past nightly evals. A small, occasional Groq spot-check is the
-  mitigation if that ever bites.
+- Evals still draw on the shared Groq quota, and **the global ceiling does not see them**: the
+  harness calls Groq directly, not through `record_usage`. On the weekly-run day the full run uses
+  ~300K tokens, half the day's budget, while the ceiling still allows 100 user questions. Run it
+  at a quiet hour, and if that day ever runs dry, lower that day's ceiling or move the run. The
+  path filter keeps PR subsets off the quota for most changes (UI, docs, infrastructure).
+- Regressions in a change that skips the PR subset are caught by the next weekly run, not
+  immediately. That lag is the price of not spending the quota on every PR.
