@@ -125,6 +125,8 @@ class Result:
     affected: int | None
     #: Postgres error code (42501 = insufficient privilege / RLS violation), if any.
     code: str | None
+    #: A function's return value, when an RPC returns a single value rather than rows.
+    value: Any = None
 
 
 def parse_response(response: httpx2.Response) -> Result:
@@ -135,13 +137,16 @@ def parse_response(response: httpx2.Response) -> Result:
         affected = int(total) if total.isdigit() else None
     rows: list[Row] = []
     code: str | None = None
+    value: Any = None
     if response.content:
         body = response.json()
         if isinstance(body, list):
             rows = cast(list[Row], body)
         elif isinstance(body, dict):
             code = cast(Row, body).get("code")
-    return Result(status=response.status_code, rows=rows, affected=affected, code=code)
+        else:
+            value = body
+    return Result(status=response.status_code, rows=rows, affected=affected, code=code, value=value)
 
 
 def eq_filters(filters: Mapping[str, str]) -> dict[str, str]:
@@ -199,6 +204,10 @@ class Session:
         )
         return parse_response(response)
 
+    def rpc(self, function: str, args: Row) -> Result:
+        """Call a database function through PostgREST, as the API will."""
+        return parse_response(self._http.post(f"/rest/v1/rpc/{function}", json=args))
+
     # ── files (Storage) ─────────────────────────────────────────────────────────────────────
     def upload(
         self,
@@ -246,6 +255,18 @@ def sign_in_with_password(settings: Settings, email: str, password: str) -> str:
     response = httpx2.post(
         f"{settings.url}/auth/v1/token",
         params={"grant_type": "password"},
+        headers={"apikey": settings.anon_key},
+        json={"email": email, "password": password},
+        timeout=30,
+    )
+    response.raise_for_status()
+    return str(response.json()["access_token"])
+
+
+def sign_up_with_password(settings: Settings, email: str, password: str) -> str:
+    """Create a brand-new real user (email confirmation is off locally); returns the token."""
+    response = httpx2.post(
+        f"{settings.url}/auth/v1/signup",
         headers={"apikey": settings.anon_key},
         json={"email": email, "password": password},
         timeout=30,

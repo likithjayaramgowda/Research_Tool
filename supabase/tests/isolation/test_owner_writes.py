@@ -123,9 +123,11 @@ def test_owner_updates_own_profile_settings(user_a: Session) -> None:
     assert user_a.update("profiles", key, {"citation_style": "apa"}).affected == 1
 
 
-def test_owner_cannot_rewrite_profile_bookkeeping(user_a: Session) -> None:
-    """Only display_name, citation_style and last_active_at are the user's to set."""
-    result = user_a.update("profiles", {"id": ids.A_USER}, {"created_at": "2000-01-01T00:00:00Z"})
+@pytest.mark.parametrize("column", ["created_at", "last_active_at"])
+def test_owner_cannot_rewrite_profile_bookkeeping(column: str, user_a: Session) -> None:
+    """Only display_name and citation_style are the user's to set. last_active_at is set by
+    record_usage (D22), so a user cannot push it into the future to dodge the D9 clean-up."""
+    result = user_a.update("profiles", {"id": ids.A_USER}, {column: "2099-01-01T00:00:00Z"})
     assert (result.status, result.code) == (403, "42501")
 
 

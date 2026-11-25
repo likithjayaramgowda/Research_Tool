@@ -132,3 +132,8 @@ def test_parse_reads_rows_count_and_error_code() -> None:
 
     denied = httpx2.Response(403, json={"code": "42501", "message": "denied"})
     assert parse_response(denied) == Result(status=403, rows=[], affected=None, code="42501")
+
+    returned = httpx2.Response(200, json=7)
+    assert parse_response(returned) == Result(
+        status=200, rows=[], affected=None, code=None, value=7
+    )

@@ -7,7 +7,8 @@ Run with: uv run pytest supabase/tests/isolation
 from __future__ import annotations
 
 import os
-from collections.abc import Iterator
+import uuid
+from collections.abc import Callable, Iterator
 
 import ids
 import pytest
@@ -19,6 +20,7 @@ from supa import (
     load_settings,
     sign_in_anonymously,
     sign_in_with_password,
+    sign_up_with_password,
 )
 
 
@@ -74,3 +76,40 @@ def nobody(settings: Settings) -> Iterator[Session]:
     session = Session(settings)
     yield session
     session.close()
+
+
+@pytest.fixture(scope="session")
+def make_user(settings: Settings) -> Iterator[Callable[[], Session]]:
+    """Sign up brand-new real users through Supabase Auth (fresh, untouched usage counters).
+
+    Local Auth allows 30 sign-ins and sign-ups per 5 minutes per IP, so use sparingly.
+    """
+    sessions: list[Session] = []
+
+    def make() -> Session:
+        email = f"fresh-{uuid.uuid4().hex[:12]}@litlens.test"
+        session = Session(settings, sign_up_with_password(settings, email, ids.PASSWORD))
+        assert session.claims["role"] == "authenticated"
+        assert session.claims["is_anonymous"] is False
+        sessions.append(session)
+        return session
+
+    yield make
+    for session in sessions:
+        session.close()
+
+
+@pytest.fixture(scope="session")
+def make_anon(settings: Settings) -> Iterator[Callable[[], Session]]:
+    """Start brand-new anonymous sessions. Local Auth allows 30 per hour per IP."""
+    sessions: list[Session] = []
+
+    def make() -> Session:
+        session = Session(settings, sign_in_anonymously(settings))
+        assert session.claims["is_anonymous"] is True
+        sessions.append(session)
+        return session
+
+    yield make
+    for session in sessions:
+        session.close()

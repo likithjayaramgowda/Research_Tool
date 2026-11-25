@@ -5,7 +5,7 @@
 -- default privileges left wide open.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(7);
+select plan(12);
 
 select is(
   (select count(*)::int from pg_tables where schemaname = 'public'),
@@ -52,6 +52,36 @@ select is(
   (select count(*)::int from public.collections where is_demo),
   1,
   'exactly one demo collection exists'
+);
+
+-- D22: the privileged write path stays one narrow, reviewed function.
+select is(
+  (select array_agg(p.proname::text order by p.proname)
+     from pg_proc p where p.pronamespace = 'public'::regnamespace and p.prosecdef),
+  array['handle_new_user', 'record_usage'],
+  'the only SECURITY DEFINER functions in public are the auth trigger and record_usage (D22)'
+);
+
+select is(
+  (select proconfig from pg_proc where oid = 'public.record_usage(text)'::regprocedure),
+  array['search_path=""'],
+  'record_usage runs with an empty search_path'
+);
+
+select ok(
+  not has_function_privilege('anon', 'public.record_usage(text)', 'execute')
+  and has_function_privilege('authenticated', 'public.record_usage(text)', 'execute'),
+  'record_usage needs a session: authenticated may call it, anon may not'
+);
+
+select ok(
+  not has_function_privilege('authenticated', 'private.daily_allowance(text, boolean)', 'execute'),
+  'API roles cannot call private.daily_allowance directly'
+);
+
+select ok(
+  not has_column_privilege('authenticated', 'public.profiles', 'last_active_at', 'UPDATE'),
+  'users cannot set profiles.last_active_at; only record_usage does (D9, D22)'
 );
 
 select * from finish();
