@@ -5,12 +5,8 @@ repos:
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v6.0.0
     hooks:
-      # The requirements log is the owner's file, re-copied verbatim from outside the repo;
-      # the hooks must never rewrite it.
       - id: trailing-whitespace
-        exclude: ^docs/requirements-and-decisions\.md$
       - id: end-of-file-fixer
-        exclude: ^docs/requirements-and-decisions\.md$
       - id: check-yaml
         exclude: ^apps/web/pnpm-lock\.yaml$
       - id: check-toml
