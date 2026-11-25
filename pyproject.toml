@@ -43,10 +43,10 @@ known-first-party = ["app", "litlens_core", "litlens_worker"]
 "**/tests/**" = ["ANN"]
 
 [tool.pyright]
-include = ["api", "worker", "packages"]
+include = ["api", "worker", "packages", "supabase/tests"]
 exclude = ["**/.venv", "**/node_modules"]
 pythonVersion = "3.12"
 typeCheckingMode = "strict"
-extraPaths = ["api", "worker", "packages/core/src"]
+extraPaths = ["api", "worker", "packages/core/src", "supabase/tests/isolation"]
 venvPath = "."
 venv = ".venv"

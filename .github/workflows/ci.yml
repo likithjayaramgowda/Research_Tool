@@ -53,3 +53,28 @@ jobs:
         run: pnpm typecheck
       - name: Unit tests (citation formats)
         run: pnpm test:unit
+
+  database:
+    # Separate from the fast jobs above: it starts a real local Supabase in Docker and proves
+    # tenant isolation with real JWTs. It must never be given a service-role key; the test
+    # suite refuses to run if one is in the environment.
+    name: Database (schema, RLS and storage isolation)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: supabase/setup-cli@v3
+        with:
+          version: 3.2.0
+      - uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+      - name: Install Python 3.12 and all workspace packages
+        run: uv sync --all-packages --frozen
+      - name: Start Supabase (database, auth, REST and storage only)
+        run: >-
+          supabase start
+          -x realtime,imgproxy,mailpit,postgres-meta,studio,edge-runtime,logflare,vector,supavisor
+      - name: Structural checks (pgTAP)
+        run: supabase test db
+      - name: Isolation tests (real JWTs, public anon key only)
+        run: uv run pytest supabase/tests/isolation -v

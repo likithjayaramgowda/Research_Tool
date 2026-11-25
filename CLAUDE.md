@@ -43,7 +43,7 @@ apps/web/         Next.js app (own pnpm project; Vercel root directory)
 api/              FastAPI app (app/main.py), tests in api/tests
 worker/           Modal app (litlens_worker/app.py), tests in worker/tests
 packages/core/    Shared pure-Python package litlens_core, tests in packages/core/tests
-supabase/         Database migrations, edge functions (empty until slice 0.3)
+supabase/         Migrations, seed.sql (local test data), tests/ (pgTAP + isolation), config
 evals/            Evaluation harness for answer quality (placeholder)
 docs/             requirements-and-decisions.md, PLAN.md, adr/, prompts/ (log of how it was built)
 ```
@@ -67,6 +67,10 @@ Run from the repo root unless noted.
 | Run web (port 3000) | `pnpm --dir apps/web dev` |
 | Web unit tests (citation formats) | `pnpm --dir apps/web test:unit` |
 | Web e2e: lens, theme, axe, screenshots | `pnpm --dir apps/web test:e2e` (builds first; screenshots go to `docs/screenshots/`) |
+| Start local Supabase (Docker) | `supabase start` (applies migrations and `supabase/seed.sql`) |
+| Rebuild the local database | `supabase db reset` |
+| Database structure tests (pgTAP) | `supabase test db` |
+| RLS and storage isolation tests | `uv run pytest supabase/tests/isolation` (needs Supabase running; refuses to run if a service-role key is in the environment) |
 
 Health check: `curl localhost:8000/api/v1/health` returns `{"status":"ok"}`.
 
