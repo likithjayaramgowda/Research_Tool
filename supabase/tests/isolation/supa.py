@@ -11,9 +11,12 @@ from __future__ import annotations
 import base64
 import json
 import subprocess
+import tomllib
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, cast
+from urllib.parse import urlsplit
 
 import httpx2
 
@@ -77,6 +80,69 @@ def assert_no_service_role(environ: Mapping[str, str]) -> None:
             f"({', '.join(found)}). These tests must run with the public anon key only; "
             "unset those variables and run again."
         )
+
+
+class NotLocalError(RuntimeError):
+    """The tests are pointed at something other than a local (or CI) Supabase."""
+
+
+LOCAL_HOSTS = frozenset({"127.0.0.1", "localhost", "::1"})
+
+
+def assert_local_target(url: str) -> None:
+    """Refuse to run against anything but a Supabase on this machine.
+
+    The suite signs users up, and the race test commits to the database it runs in. Neither may
+    ever reach the hosted project, so a non-local URL stops the run.
+    """
+    host = urlsplit(url).hostname
+    if host not in LOCAL_HOSTS:
+        raise NotLocalError(
+            f"Refusing to run the isolation tests against {url!r}: they sign users up and the "
+            "race test commits to the database. Point them at a local Supabase "
+            "(`supabase start`), which is also what CI uses."
+        )
+
+
+def db_container_name(config_path: Path) -> str:
+    """The local database container's name, from project_id in supabase/config.toml.
+
+    The Supabase CLI names it supabase_db_<project_id>, so renaming the project renames it.
+    """
+    try:
+        project_id = tomllib.loads(config_path.read_text()).get("project_id")
+    except (OSError, tomllib.TOMLDecodeError) as error:
+        raise NotLocalError(f"Cannot read project_id from {config_path}: {error}") from error
+    if not isinstance(project_id, str) or not project_id:
+        raise NotLocalError(
+            f"{config_path} has no project_id, so the database container's "
+            "name (supabase_db_<project_id>) cannot be worked out."
+        )
+    return f"supabase_db_{project_id}"
+
+
+def _container_is_running(name: str) -> bool:
+    run = subprocess.run(
+        ["docker", "inspect", "--format", "{{.State.Running}}", name],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return run.returncode == 0 and run.stdout.strip() == "true"
+
+
+def local_db_container(
+    config_path: Path, is_running: Callable[[str], bool] = _container_is_running
+) -> str:
+    """The running local database container, or an error that says why there isn't one."""
+    name = db_container_name(config_path)
+    if not is_running(name):
+        raise NotLocalError(
+            f"No running Docker container named {name!r}. The name comes from project_id in "
+            f"{config_path}; start Supabase with `supabase start`, and if project_id was "
+            "changed, restart Supabase so the container is renamed to match."
+        )
+    return name
 
 
 @dataclass(frozen=True)

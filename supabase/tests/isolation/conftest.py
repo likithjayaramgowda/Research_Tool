@@ -13,9 +13,11 @@ from collections.abc import Callable, Iterator
 import ids
 import pytest
 from supa import (
+    NotLocalError,
     ServiceRoleKeyPresentError,
     Session,
     Settings,
+    assert_local_target,
     assert_no_service_role,
     load_settings,
     sign_in_anonymously,
@@ -34,7 +36,13 @@ def pytest_configure(config: pytest.Config) -> None:
 
 @pytest.fixture(scope="session")
 def settings() -> Settings:
-    return load_settings(os.environ)
+    """Where the local Supabase is. The second guard: stop unless it really is local."""
+    loaded = load_settings(os.environ)
+    try:
+        assert_local_target(loaded.url)
+    except NotLocalError as error:
+        pytest.exit(str(error), returncode=pytest.ExitCode.USAGE_ERROR)
+    return loaded
 
 
 def _signed_in(settings: Settings, owned: ids.Owned) -> Iterator[Session]:

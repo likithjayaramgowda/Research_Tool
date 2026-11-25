@@ -12,15 +12,19 @@ from pathlib import Path
 import httpx2
 import pytest
 from supa import (
+    NotLocalError,
     Result,
     ServiceRoleKeyPresentError,
     Settings,
+    assert_local_target,
     assert_no_service_role,
+    db_container_name,
     eq_filters,
     find_service_role_keys,
     is_privileged_key,
     jwt_claims,
     load_settings,
+    local_db_container,
     parse_response,
 )
 
@@ -141,4 +145,84 @@ def test_parse_reads_rows_count_and_error_code() -> None:
     returned_object = httpx2.Response(200, json={"code": "not-an-error"})
     assert parse_response(returned_object) == Result(
         status=200, rows=[], affected=None, code=None, value={"code": "not-an-error"}
+    )
+
+
+# ── pointed at a local database only ───────────────────────────────────────────────────────
+@pytest.mark.parametrize(
+    "url", ["http://127.0.0.1:54321", "http://localhost:54321", "http://[::1]:54321"]
+)
+def test_local_targets_are_allowed(url: str) -> None:
+    assert_local_target(url)
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["https://abcdefgh.supabase.co", "http://10.0.0.5:54321", "http://127.0.0.1.evil.example"],
+)
+def test_remote_targets_are_refused(url: str) -> None:
+    with pytest.raises(NotLocalError, match="Refusing to run"):
+        assert_local_target(url)
+
+
+def test_suite_refuses_a_remote_url_end_to_end() -> None:
+    """A real pytest run pointed at a hosted project stops before any test touches it."""
+    env = {
+        **os.environ,
+        "SUPABASE_URL": "https://abcdefgh.supabase.co",
+        "SUPABASE_ANON_KEY": ANON_JWT,
+    }
+    run = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "pytest",
+            str(Path(__file__).parent / "test_race.py"),
+            "-q",
+            "-p",
+            "no:cacheprovider",
+        ],
+        env=env,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert run.returncode == pytest.ExitCode.USAGE_ERROR
+    assert "Refusing to run the isolation tests against" in run.stdout + run.stderr
+
+
+def test_container_name_comes_from_project_id(tmp_path: Path) -> None:
+    config = tmp_path / "config.toml"
+    config.write_text('project_id = "renamed"\n\n[api]\nport = 54321\n')
+    assert db_container_name(config) == "supabase_db_renamed"
+
+
+def test_the_real_config_names_the_container() -> None:
+    config = Path(__file__).resolve().parents[2] / "config.toml"
+    assert db_container_name(config) == "supabase_db_litlens"
+
+
+def test_missing_project_id_is_named_as_the_cause(tmp_path: Path) -> None:
+    config = tmp_path / "config.toml"
+    config.write_text("[api]\nport = 54321\n")
+    with pytest.raises(NotLocalError, match="has no project_id"):
+        db_container_name(config)
+
+
+def test_a_missing_container_is_explained(tmp_path: Path) -> None:
+    config = tmp_path / "config.toml"
+    config.write_text('project_id = "renamed"\n')
+    with pytest.raises(NotLocalError) as error:
+        local_db_container(config, is_running=lambda _name: False)
+    message = str(error.value)
+    assert "supabase_db_renamed" in message
+    assert "project_id" in message
+    assert str(config) in message
+
+
+def test_a_running_container_is_returned(tmp_path: Path) -> None:
+    config = tmp_path / "config.toml"
+    config.write_text('project_id = "renamed"\n')
+    assert local_db_container(config, is_running=lambda name: name == "supabase_db_renamed") == (
+        "supabase_db_renamed"
     )

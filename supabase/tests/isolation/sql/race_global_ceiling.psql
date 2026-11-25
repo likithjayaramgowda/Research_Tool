@@ -1,24 +1,36 @@
--- Racing the global ceiling (D24), run with `supabase test db` (pgTAP).
+-- Racing the global ceiling (D24). Run ONLY by test_race.py, never directly.
+--
+-- The extension is .psql, not .sql, on purpose: `supabase test db` runs every .sql file under
+-- supabase/tests, including with --remote against the hosted project, and this script commits
+-- to the database it runs in. test_race.py runs it through `docker exec` into the local
+-- Supabase container, behind the suite's guards, and passes the container's name as :db_host.
 --
 -- Check-and-count must be one statement, or two simultaneous requests can both take the last
--- unit. A test that calls the function one call at a time cannot tell the difference, so this
--- one opens twenty real connections with dblink (a standard Postgres extension, created only
--- inside this rolled-back transaction) and fires twenty questions at once at a ceiling of five.
---
--- The racers must see committed data, so their setup is committed through a separate connection.
--- Everything that touches committed state runs in one block whose cleanup also runs on error:
--- the racers are deleted (cascading to their usage) and today's global counter is put back
--- exactly as it was. The results are captured first and asserted afterwards.
+-- unit; a test calling one at a time cannot tell. So this opens twenty real connections with
+-- dblink (a standard Postgres extension, created only inside this rolled-back transaction) and
+-- fires twenty questions at once at a ceiling of five. The racers must see committed data, so
+-- their setup is committed through a separate connection; every committed change is undone in
+-- the same block, on error too. The last line printed is a JSON summary for the test to check.
+\set ON_ERROR_STOP on
 begin;
-create extension if not exists pgtap with schema extensions;
-create extension if not exists dblink with schema extensions;
-select plan(4);
 
-create function pg_temp.dsn() returns text language sql immutable as $$
+-- Third guard, inside the database itself: only a seeded local/CI test database has this user
+-- (supabase/seed.sql never runs against the hosted project).
+do $$
+begin
+  if not exists (select 1 from auth.users where email = 'user-a@litlens.test') then
+    raise exception 'refusing to race: this is not a seeded local test database';
+  end if;
+end $$;
+
+create extension if not exists dblink with schema extensions;
+select set_config('race.db_host', :'db_host', true) is not null as host_set \g /dev/null
+
+create function pg_temp.dsn() returns text language sql stable as $$
   -- The container's own Docker name, not 127.0.0.1: loopback connections are trusted without a
-  -- password, and dblink refuses a non-superuser connection that didn't use one. The name comes
-  -- from project_id in supabase/config.toml, so it is the same locally and in CI.
-  select 'host=supabase_db_litlens port=5432 dbname=postgres user=postgres password=postgres'
+  -- password, and dblink refuses a non-superuser connection that didn't use one.
+  select format('host=%s port=5432 dbname=postgres user=postgres password=postgres',
+                current_setting('race.db_host'))
 $$;
 create function pg_temp.racer(n integer) returns uuid language sql immutable as $$
   select ('f0000000-0000-0000-0000-0000000000' || lpad(n::text, 2, '0'))::uuid
@@ -79,7 +91,7 @@ begin
         'select public.record_usage(''question'')');
     end loop;
 
-    -- Collect what each racer got: a remaining count, or the error it was refused with.
+    -- Collect what each racer got: a result, or the error it was refused with.
     for n in 1..20 loop
       begin
         perform * from extensions.dblink_get_result('racer' || n) as t(r jsonb);
@@ -104,23 +116,17 @@ begin
   perform extensions.dblink_disconnect('admin');
 end $$;
 
-select is(
-  (select count(*)::integer from outcomes where ok), 5,
-  'of twenty simultaneous questions, exactly five get through a ceiling of five'
-);
-select is(
-  (select count(*)::integer from outcomes where not ok and message like '%"ceiling_reached"%'),
-  15,
-  'the other fifteen are all refused cleanly with ceiling_reached'
-);
-select is(
-  (select global_weighted from final_counts), 5,
-  'the global counter read exactly five'
-);
-select is(
-  (select personal_questions from final_counts), 5,
-  'and only the five who got through were charged personally'
+-- The summary test_race.py checks. leftover_racers proves the clean-up ran.
+select json_build_object(
+  'succeeded', (select count(*) from outcomes where ok),
+  'ceiling_reached', (select count(*) from outcomes
+                       where not ok and message like '%"ceiling_reached"%'),
+  'other_errors', (select coalesce(json_agg(message), '[]') from outcomes
+                    where not ok and message not like '%"ceiling_reached"%'),
+  'global_weighted', (select global_weighted from final_counts),
+  'personal_questions', (select personal_questions from final_counts),
+  'leftover_racers', (select count(*) from auth.users
+                       where id::text like 'f0000000-0000-0000-0000-0000000000%')
 );
 
-select * from finish();
 rollback;
