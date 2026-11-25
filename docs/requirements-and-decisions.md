@@ -1,11 +1,11 @@
 # LitLens: Requirements & Decisions Log
-_Living document. Read this first in any new LitLens chat. Last updated: 2026-11-25 (D21 usage and demo access)._
+_Living document. Read this first in any new LitLens chat. Last updated: 2026-11-25 (D22 privileged write path, D23 anonymous answers)._
 
 - **Author and copyright holder:** Likith Jayaram Gowda (D16).
 - **Repo:** github.com/likithjayaramgowda/Research_Tool (D18). The product is still called LitLens everywhere else.
 - **Master plan:** [LitLens — Final Project Plan](https://claude.ai/artifact/HVLRF17DMCtBgGovvfc831). It covers phases, to-dos, done-when checks, evaluation targets, risks and the timeline.
 - **Progress and current status:** `claude/litlens-progress.md`, updated after every slice. It holds the slice log, learning-check results and next steps.
-- This log holds decisions and verified facts. **A copy of it belongs in the repo** at `docs/requirements-and-decisions.md`, because Claude Code cannot see this project and has already had to guess at the data model without it.
+- This log holds decisions and verified facts. **A copy lives in the repo** at `docs/requirements-and-decisions.md`, and `CLAUDE.md` tells Claude Code to read it at the start of each slice. **Re-copy it whenever this file changes**, or the two drift apart.
 
 ## Vision
 LitLens is a RAG web app for research students. Each student signs in with Google, uploads papers to a private workspace, and asks questions that are answered only from those papers, with citations. LitLens also extracts structured information and finds research gaps, including checking a student's own gap idea against their papers. It also checks each paper's relevance to the student's topic.
@@ -48,13 +48,15 @@ LitLens is a RAG web app for research students. Each student signs in with Googl
 | D19 | Motion: LitLens gets a live animated background, but only on screens with nothing to read — home, sign-in and empty states. The library, answer column and source panel stay still. The animation is a **live demo loop**: the real interaction replaying itself (a question, the answer appearing a sentence at a time, a citation chip, the source passage highlighting). It is built from the real design-system components on sample data, not a video, GIF or canvas particle library, so it cannot drift from the system. It must honour `prefers-reduced-motion` by rendering the end state statically, pause when off-screen or when the tab is hidden, cause no layout shift, and keep home's mobile Lighthouse performance at 90 or above. D17's avoid list still applies. Sign-in gets a quieter variant that plays once rather than looping. | Asked for a live, interactive-looking background; motion behind long-form reading text would fight the core task, and a demo loop sells the product in the first seconds |
 | D20 | The citation style switcher (APA 7, MLA 9, Chicago author-date, Harvard, IEEE, Vancouver) and the References block stay in the app shell, expanding R5. Condition: references must degrade gracefully. When reference metadata is missing, render what is known and mark the gaps visibly; never invent a volume, issue, page range or journal. Revisit once slice 1.2 shows what Docling actually extracts. The same principle applies to paper cards: a field the papers don't state is left empty rather than filled in. | Stated in chat on 2026-11-23; a fabricated reference would undercut "every claim is checkable" |
 | D21 | Usage is recorded against `auth.users(id)`, not `profiles(id)`, so anonymous demo sessions are metered. Anonymous sessions get no profile row. The demo collection has no owner, is seeded by a migration with a fixed id, and is readable by every authenticated session, anonymous or signed in; only the service role writes to it. | The anonymous live-question allowance (D8) has to be enforced somewhere, and the API on Vercel is stateless, so the database is the only place it can live. Signed-in users with an empty library benefit from seeing the demo too |
+| D22 | Metering and activity go through **one `security definer` function**, called with the user's own JWT. It increments `usage_daily` for `auth.uid()`, sets `last_active_at` to `now()` for signed-in users, and returns the remaining allowance so the UI can show it. Users have no direct write on `usage_daily`, and `last_active_at` is removed from the columns a profile update may set. **The API never holds the service-role key**; the Modal worker stays the only service-role component. | The API is internet-facing and the worker is not, so giving the API a service-role key widens the blast radius for no gain. One narrow, auditable privileged surface is easier to defend in the threat model. It also closes the hole where a user could set `last_active_at` into the future and dodge the D9 clean-up |
+| D23 | Live answers given to anonymous demo sessions are **not persisted**. They are held in the client for the session; refreshing loses them, which is acceptable for a demo. Evaluation traces still go to Langfuse. As a result anonymous sessions never write to the database at all. | Keeps the 500 MB free-tier database for real users, keeps the D9 clean-up simple, and leaves the RLS story clean: a demo visitor can read two things and write nothing |
 
 ## Requirements register
 Status key: PROPOSED · AGREED · LATER · DROPPED
 
 | ID | Requirement | Verdict / notes | Status |
 |---|---|---|---|
-| R1 | Beautiful, interactive UI | Next.js, Tailwind, shadcn/ui and Motion, with the design direction in D17. The design system comes before the screens. Motion is scoped by D19: live demo loop on home, sign-in and empty states only. | AGREED |
+| R1 | Beautiful, interactive UI | Next.js, Tailwind, shadcn/ui and Motion, with the design direction in D17. The design system comes before the screens. Motion is scoped by D19. | AGREED |
 | R2 | Login | Google sign-in for any Google account (D6), plus anonymous demo sessions (D8). Email/password comes later and needs custom SMTP. | AGREED (email/password: LATER) |
 | R3 | Private workspace per student | Postgres RLS. The API queries with the user's JWT so RLS always applies. Anonymous demo sessions arrive as the `authenticated` role, so policies separate them by the `is_anonymous` JWT claim, not the database role. | AGREED |
 | R4 | 50 MB / 30 papers per student, ~20 MB per file | Enforced server-side at upload, not as database constraints, so an oversized paper fails with a readable status rather than a constraint error. Scanned PDFs are rejected in v1. Supabase Storage only (D2). Proposed page limit: 60. | AGREED |
@@ -64,7 +66,7 @@ Status key: PROPOSED · AGREED · LATER · DROPPED
 | R8 | Relevance to topic | A research profile and a relevance label with quoted reasons. Each verdict stores the topic it was checked against, so a changed topic shows the verdict is stale. The pre-upload DOI/arXiv check comes after the core. | AGREED |
 | R9 | Free tier only | Portfolio scale, no card anywhere | AGREED |
 | R10 | More features later | Backlog, made possible by R15 | AGREED |
-| R11 | Recruiter demo | A demo workspace of ~10 CC BY open-access papers on RAG and LLM evaluation (D14). Suggested questions have precomputed answers. Anonymous allowance per D8, metered per D21. | AGREED |
+| R11 | Recruiter demo | A demo workspace of ~10 CC BY open-access papers on RAG and LLM evaluation (D14). Suggested questions have precomputed answers. Anonymous allowance per D8, metered per D21/D22, answers not stored per D23. | AGREED |
 | R12 | Always awake | A daily Vercel cron as keep-alive; pg_cron can't do it because it stops when the project pauses. Recruiter-facing paths only use services that never sleep. | AGREED |
 | R13 | Open sign-up guardrails | Per-student caps, a global cap on active workspaces (demo-only when full), 30-day inactivity clean-up (D9), rate limits, Turnstile. | AGREED |
 | R14 | Portfolio polish | Landing page, a "How it works" page with the diagram, a public eval page, a README with a GIF, ADRs. The home demo loop (D19) is pulled forward into 0.2b. | AGREED |
@@ -82,7 +84,7 @@ Status key: PROPOSED · AGREED · LATER · DROPPED
   - a verdict
   - the closest papers and what each lacks
   - keyword hit counts as deterministic evidence
-- **Runs as a background job** with a status and live progress, so the row exists from the moment the check is queued and the UI can watch it.
+- **Runs as a background job** with a status and live progress, so the row exists from the moment the check is queued and the UI can watch it. The user may queue one and delete their own, but never update one; results are written by the worker.
 - **Boundary:** "not covered" means not in the uploaded papers. The wider check (after the core) uses Semantic Scholar / OpenAlex, never the model's memory.
 - **Cost:** ~30K tokens per check (estimate). It has its own daily cap.
 - **Interview angle:** top-k retrieval proves presence, never absence. Proving absence needs an exhaustive pass, kept affordable by screening cheaply first.
@@ -99,11 +101,12 @@ Status key: PROPOSED · AGREED · LATER · DROPPED
   - job enqueueing, usage caps and demo answers
   - the pre-upload DOI/arXiv check (after the core)
   - the daily maintenance endpoint called by the Vercel cron
+  - It queries with the user's JWT only, and never holds the service-role key (D22).
   - The deployment shape (one Vercel project with a same-domain rewrite, or two projects) is decided in slice 0.5.
 - **Supabase:**
   - Auth: Google, plus anonymous demo sessions behind Turnstile.
-  - Postgres: tables, pgvector HNSW, full-text tsvector, RLS, and SQL functions such as `hybrid_search` (RRF fusion).
-  - Storage: a private bucket with per-user folders.
+  - Postgres: tables, pgvector HNSW, full-text tsvector, RLS, helper functions in a `private` schema, and SQL functions such as `hybrid_search` (RRF fusion).
+  - Storage: a private `papers` bucket, PDF only, with per-user folders and a `demo/` folder readable by every session.
   - Realtime: live progress.
   - Queues (pgmq) for jobs, and pg_cron for in-database housekeeping.
   - Edge Function `embed`: the built-in gte-small (384-dim). It is the only embedder, for both chunks and queries.
@@ -119,7 +122,7 @@ Status key: PROPOSED · AGREED · LATER · DROPPED
   - The Gemini adapter is for dev/eval only.
 - **Shared Python core (`packages/core`):** models, chunking, versioned prompts, citation parsing and verification, the LLM client and quotas. Light dependencies only; Docling lives only in the worker.
 - **Ops:**
-  - GitHub Actions: lint, types and tests; a 15-question eval subset on each PR; the full 60-question eval nightly.
+  - GitHub Actions: lint, types and tests; a database job that starts Supabase and runs the RLS suite; a 15-question eval subset on each PR; the full 60-question eval nightly.
   - Langfuse Cloud Hobby for traces, storing question and chunk IDs rather than whole paper text.
   - A daily Vercel cron for keep-alive, the 30-day clean-up and usage resets.
 
@@ -131,13 +134,13 @@ Status key: PROPOSED · AGREED · LATER · DROPPED
   4. Otherwise, stream from Groq with numbered sources.
   5. Map citations and run deterministic checks: every sentence is cited, the cited IDs exist, and quoted spans match.
   6. Optional LLM-judge pass, kept only if evals show it helps.
-  7. Save the message, trace and usage.
+  7. Save the message and trace, and record usage through the D22 function. Anonymous sessions skip the message save (D23).
 - **Upload:**
   1. The browser asks the API for an upload intent.
   2. The API checks caps and returns a signed URL.
   3. The browser uploads straight to Storage, because Vercel caps function request bodies (~4.5 MB; verify in Phase 1).
   4. The API enqueues a job and the worker processes it.
-  5. Progress updates reach the UI via Realtime.
+  5. Progress updates reach the UI via Realtime, from a 0–100 field on `papers` rather than a page count, since chunking and embedding aren't measured in pages and the page count is unknown until the parser opens the file.
 
 ### Data model (built in slice 0.3)
 profiles · collections · papers · chunks · paper_cards · relevance · gap_checks · messages · usage_daily · demo_answers · eval_runs.
@@ -146,9 +149,9 @@ Shape decisions made at the 0.3 checkpoint:
 - Ownership flows `auth.users` → `profiles` → `collections.owner_id` → everything else, all cascading on delete, which also gives R14's delete-account for free.
 - The demo collection has a null owner and a fixed id, with at most one enforced by a partial unique index (D21).
 - Every table holding generated output stores what produced it. LLM tables carry `model` and `prompt_version`; chunks carry `embedding_model` and `chunker_version` instead, because a chunk has no prompt. This is what makes R15's "re-run jobs, don't rebuild" work.
-- `papers` carries nullable reference metadata (journal, volume, issue, page range, DOI, publisher) from day one for D20, and may legitimately stay empty.
+- `papers` carries nullable reference metadata (journal, volume, issue, page range, DOI, publisher) from day one for D20, and may legitimately stay empty. Paper-card fields are nullable for the same reason.
 - `chunks.fts` is a stored generated tsvector; the vector column is nullable until `embed` has run, with a check tying it to `embedding_model`.
-- `gap_checks.paper_ids` is a snapshot array rather than foreign keys, so a historical check still reads correctly after a paper is deleted.
+- `gap_checks.paper_ids` is a snapshot array rather than foreign keys, so a historical check still reads correctly after a paper is deleted. `result` is an object and stays null until the job finishes.
 - Foreign keys are not indexed automatically, so `papers(collection_id)` and `collections(owner_id)` carry explicit indexes; RLS filters on both constantly.
 - Limits (30 papers, 50 MB, 60 pages) are enforced at upload, not as constraints (R4).
 
@@ -160,7 +163,7 @@ Shape decisions made at the 0.3 checkpoint:
 5. The demo runs on anonymous sessions, Turnstile and a question allowance; suggested questions are precomputed.
 6. A thin custom LLM client instead of a heavy framework: a smaller bundle, a fallback chain, and learning value.
 7. The reranker waits until evals justify it (candidate: a small cross-encoder in the API).
-8. RLS is the tenancy boundary. The API queries with the user's JWT; the worker's service-role key is the single privileged path.
+8. RLS is the tenancy boundary. The API queries with the user's JWT; the worker's service-role key is the single privileged path, with one narrow `security definer` function as the only exception (D22).
 
 ### Extensibility design (R15)
 - **Feature modules:** each feature owns its migration, API routes, job type, prompts and UI page, and sits behind a feature flag.
@@ -178,6 +181,7 @@ Shape decisions made at the 0.3 checkpoint:
    - 0.2 design system and app shell
    - 0.2b checkpoint fixes, demo loop (D19) and citation styles (D20)
    - 0.3 Supabase schema and RLS with tests
+   - 0.3b the privileged write path (D22)
    - 0.4 Google and anonymous demo sign-in
    - 0.5 first deploy
 1. **Uploads:**
@@ -246,6 +250,7 @@ Retrieval recall@10 ≥ 0.85 · faithfulness ≥ 0.90 · citation accuracy ≥ 0
 - **Langfuse Cloud Hobby:** 50k units/month, 30 days of data, 2 users, no card.
 - **Semantic Scholar API:** a free key gives 1 RPS; attribution required.
 - **OpenAlex:** a free key gives $1/day of free usage; ID/DOI lookups are free.
+- **httpx2** (checked 2026-11-25): Pydantic Services took over stewardship of httpx under this name in May 2026. BSD-3, drop-in, same API. Current version 2.16.2; a high-severity vulnerability is reported against 2.0.0, so keep the pin current.
 - **Not used:**
   - Hugging Face Spaces: Docker is paid since Jul 2026.
   - Oracle Always Free: needs a card; halved to 2 OCPU / 12 GB.
@@ -268,10 +273,12 @@ Retrieval recall@10 ≥ 0.85 · faithfulness ≥ 0.90 · citation accuracy ≥ 0
 - Next generates some types only during a build, so a type that exists locally can be missing on a fresh CI checkout. Don't rely on generated types in hand-written code.
 - Supabase anonymous sign-ins arrive as the `authenticated` role, not `anon`. Policies that try to separate demo sessions by database role will not work; use the `is_anonymous` JWT claim.
 - Postgres does not index foreign keys automatically, and RLS policies filter on them on every query.
-- A table with RLS enabled and no policy is deny-all. Isolation tests pass against it while the feature is completely broken, so isolation tests alone never prove a policy is right.
+- A table with RLS enabled and no policy is deny-all. Isolation tests pass against it while the feature is completely broken, so isolation tests alone never prove a policy is right. The 0.3 suite was mutation-tested: policies were deliberately broken seven ways and every break was caught.
+- TRUNCATE ignores RLS, so API roles must not have it.
+- **httpx2 silences httpx-based instrumentation.** OpenTelemetry's HTTPXClientInstrumentor, the Sentry integration, respx, pytest-httpx and vcrpy go quiet unless `httpx2.alias_httpx()` runs before anything imports httpx. This will bite when Langfuse tracing is wired up in 2.2 and 4.2.
 
 ## Backlog
-MCP server for querying a library from assistants · Zotero/BibTeX import/export · related-paper suggestions · literature-review outlines · multiple collections per student · figure/equation understanding · history of paper cards and relevance verdicts across prompt versions.
+MCP server for querying a library from assistants · Zotero/BibTeX import/export · related-paper suggestions · literature-review outlines · multiple collections per student · figure/equation understanding · history of paper cards and relevance verdicts across prompt versions · persisting anonymous demo answers if the demo ever needs shareable transcripts (D23).
 
 ## Open items
 1. Modal's no-card credit amount ($5 or $30): confirm when the account is created in slice 1.2.
