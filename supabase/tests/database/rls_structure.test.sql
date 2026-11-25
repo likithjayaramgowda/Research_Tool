@@ -5,7 +5,7 @@
 -- default privileges left wide open.
 begin;
 create extension if not exists pgtap with schema extensions;
-select plan(12);
+select plan(14);
 
 select is(
   (select count(*)::int from pg_tables where schemaname = 'public'),
@@ -82,6 +82,21 @@ select ok(
 select ok(
   not has_column_privilege('authenticated', 'public.profiles', 'last_active_at', 'UPDATE'),
   'users cannot set profiles.last_active_at; only record_usage does (D9, D22)'
+);
+
+-- D24: the global quota lives where no API role can touch it.
+select is(
+  (select count(*)::int from information_schema.role_table_grants
+    where table_schema = 'private' and grantee in ('anon', 'authenticated', 'public')),
+  0,
+  'API roles have no privilege on any table in the private schema'
+);
+
+select ok(
+  exists (select 1 from pg_constraint
+           where conname = 'usage_global_within_ceiling'
+             and conrelid = 'private.usage_global'::regclass),
+  'the global counter cannot exceed its ceiling, whatever code writes it'
 );
 
 select * from finish();

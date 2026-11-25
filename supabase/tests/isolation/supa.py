@@ -158,6 +158,8 @@ class Session:
 
     def __init__(self, settings: Settings, access_token: str | None = None) -> None:
         self.access_token = access_token
+        self.base_url = settings.url
+        self.anon_key = settings.anon_key
         headers = {"apikey": settings.anon_key}
         if access_token:
             headers["Authorization"] = f"Bearer {access_token}"
@@ -207,6 +209,10 @@ class Session:
     def rpc(self, function: str, args: Row) -> Result:
         """Call a database function through PostgREST, as the API will."""
         return parse_response(self._http.post(f"/rest/v1/rpc/{function}", json=args))
+
+    def raw_rpc(self, function: str, args: Row) -> httpx2.Response:
+        """The same call, returning the raw response so a test can read the whole body."""
+        return self._http.post(f"/rest/v1/rpc/{function}", json=args)
 
     # ── files (Storage) ─────────────────────────────────────────────────────────────────────
     def upload(

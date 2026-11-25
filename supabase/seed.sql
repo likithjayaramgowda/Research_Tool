@@ -101,3 +101,12 @@ insert into public.eval_runs (id, git_sha, dataset, model, prompt_version, metri
 -- policies too.
 insert into storage.objects (bucket_id, name, metadata)
 values ('papers', 'demo/demo.pdf', '{"mimetype": "application/pdf", "size": 1000}');
+
+
+-- ── global quota ────────────────────────────────────────────────────────────────────────────
+-- The HTTP isolation suite spends about twenty weighted questions per run, and the real ceiling
+-- (100 a day, set by the quota_governance migration) would stop it after a few runs on the same
+-- day. Test databases get a ceiling the suite never reaches. The pgTAP tests in
+-- supabase/tests/database/usage_quota.test.sql set the real value back inside their own
+-- transaction and prove the ceiling there.
+update private.quota_settings set daily_ceiling = 1000000;
